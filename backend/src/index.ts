@@ -32,11 +32,11 @@ app.use(
 );
 
 app.get(
-  "/",
+  "/health",
   asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    throw new BadRequestException("throwing async error");
+    // throw new BadRequestException("throwing async error");
     res.status(HTTPSTATUS.OK).json({
-      message: "Hello Subscribe to the channel",
+      message: "i am healthy ",
     });
   })
 );
