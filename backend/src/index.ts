@@ -6,7 +6,6 @@ import { config } from "./config/app.config";
 import { HTTPSTATUS } from "./config/http.config";
 import { errorHandler } from "./middlewares/errorHandler.middleware";
 import { asyncHandler } from "./middlewares/asyncHandler.middeware";
-import { BadRequestException } from "./utils/app-error";
 import { initializeDatabase } from "./database/database";
 import authRoutes from "./routes/auth.route";
 import passport from "passport";

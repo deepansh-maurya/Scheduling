@@ -1,4 +1,3 @@
-import { title } from "process";
 import { AppDataSource } from "../config/database.config";
 import {
   Integration,
@@ -16,8 +15,6 @@ const appTypeToProviderMap: Record<
 > = {
   [IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR]:
     IntegrationProviderEnum.GOOGLE,
-  [IntegrationAppTypeEnum.ZOOM_MEETING]: IntegrationProviderEnum.ZOOM,
-  [IntegrationAppTypeEnum.OUTLOOK_CALENDAR]: IntegrationProviderEnum.MICROSOFT,
 };
 
 const appTypeToCategoryMap: Record<
@@ -26,15 +23,10 @@ const appTypeToCategoryMap: Record<
 > = {
   [IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR]:
     IntegrationCategoryEnum.CALENDAR_AND_VIDEO_CONFERENCING,
-  [IntegrationAppTypeEnum.ZOOM_MEETING]:
-    IntegrationCategoryEnum.VIDEO_CONFERENCING,
-  [IntegrationAppTypeEnum.OUTLOOK_CALENDAR]: IntegrationCategoryEnum.CALENDAR,
 };
 
 const appTypeToTitleMap: Record<IntegrationAppTypeEnum, string> = {
   [IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR]: "Google Meet & Calendar",
-  [IntegrationAppTypeEnum.ZOOM_MEETING]: "Zoom",
-  [IntegrationAppTypeEnum.OUTLOOK_CALENDAR]: "Outlook Calendar",
 };
 
 export const getUserIntegrationsService = async (userId: string) => {
@@ -68,7 +60,7 @@ export const checkIntegrationService = async (
   const integration = await integrationRepository.findOne({
     where: { user: { id: userId }, app_type: appType },
   });
-
+  
   if (!integration) {
     return false;
   }
