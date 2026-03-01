@@ -21,14 +21,15 @@ jobs:
         run: npm run build
         working-directory: backend
 
-      - name: Copy build files to EC2
+      - name: Copy dist to EC2
         uses: appleboy/scp-action@v0.1.4
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
-          source: "backend/dist/*"
-          target: "/home/ec2-user/apps/Scheduling/backend/dist"
+          source: "backend/dist"
+          target: "/home/ec2-user/apps/Scheduling/backend"
+          rm: true
 
       - name: Restart PM2
         uses: appleboy/ssh-action@v1.0.0
@@ -38,5 +39,11 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             cd /home/ec2-user/apps/Scheduling/backend
-            pm2 restart scheduling-backend || pm2 start dist/index.js --name scheduling-backend
-            pm2 save
+
+            if [ -f dist/index.js ]; then
+              pm2 restart scheduling-backend || pm2 start dist/index.js --name scheduling-backend
+              pm2 save
+            else
+              echo "dist/index.js not found!"
+              exit 1
+            fi
