@@ -20,8 +20,9 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
           script: |
-           cd /home/ec2-user/apps/app1/scheduling/backend
+           cd /home/ec2-user/apps/Scheduling
            git pull origin main
+           cd /home/ec2-user/apps/Scheduling/backend
            npm install
            npm run build
            pm2 delete scheduling-backend || true
