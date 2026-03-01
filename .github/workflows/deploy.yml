@@ -38,5 +38,5 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             cd /home/ec2-user/apps/Scheduling/backend
-            pm2 restart scheduling-backend || pm2 start dist/main.js --name scheduling-backend
+            pm2 restart scheduling-backend || pm2 start dist/index.js --name scheduling-backend
             pm2 save
