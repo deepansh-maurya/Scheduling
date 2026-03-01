@@ -38,3 +38,5 @@ jobs:
           script: |
             pm2 restart scheduling-backend || pm2 start dist/main.js --name scheduling-backend
             pm2 save
+
+            
