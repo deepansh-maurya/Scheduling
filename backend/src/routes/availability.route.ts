@@ -8,6 +8,11 @@ import {
 
 const availabilityRoutes = Router();
 
+
+
+
+
+
 availabilityRoutes.get(
   "/me",
   passportAuthenticateJwt,

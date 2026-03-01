@@ -40,6 +40,16 @@ app.get(
   })
 );
 
+app.get(
+  "/running",
+  asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    // throw new BadRequestException("throwing async error");
+    res.status(HTTPSTATUS.OK).json({
+      message: "i am running ",
+    });
+  })
+);
+
 app.use(`${BASE_PATH}/auth`, authRoutes);
 app.use(`${BASE_PATH}/event`, eventRoutes);
 app.use(`${BASE_PATH}/availability`, availabilityRoutes);
