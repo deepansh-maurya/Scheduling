@@ -13,10 +13,14 @@ import {
   ToggleEventVisibilityResponseType,
   UserAvailabilityResponseType,
   UserEventListResponse,
-  UserMeetingsResponseType,
+  UserMeetingsResponseType
 } from "@/types/api.type";
 import { API, PublicAPI } from "./axios-client";
-import { IntegrationAppType, VideoConferencingPlatform } from "./types";
+import {
+  IntegrationAppType,
+  MeetingType,
+  VideoConferencingPlatform
+} from "./types";
 
 export const loginMutationFn = async (
   data: loginType
@@ -84,10 +88,11 @@ export const updateUserAvailabilityMutationFn = async (
 //*********** */ Meeting APIS
 
 export const getUserMeetingsQueryFn = async (
-  filter: PeriodType
+  filter: PeriodType,
+  meetingType: MeetingType
 ): Promise<UserMeetingsResponseType> => {
   const response = await API.get(
-    `/meeting/user/all${filter ? `?filter=${filter}` : ""}`
+    `/meeting/user/all/${meetingType}${filter ? `?filter=${filter}` : ""}`
   );
   return response.data;
 };
@@ -96,6 +101,8 @@ export const cancelMeetingMutationFn = async (meetingId: string) => {
   const response = await API.put(`/meeting/cancel/${meetingId}`, {});
   return response.data;
 };
+
+// export const syncMeetings
 
 //*********** */ All EXTERNAL/PUBLIC APIS
 export const getAllPublicEventQueryFn = async (
@@ -116,7 +123,7 @@ export const getSinglePublicEventBySlugQueryFn = async (data: {
 };
 
 export const getPublicAvailabilityByEventIdQueryFn = async (
-  eventId: string,
+  eventId: string
   // timezone?: string
 ): Promise<PublicAvailabilityEventResponseType> => {
   const response = await PublicAPI.get(`/availability/public/${eventId}`);

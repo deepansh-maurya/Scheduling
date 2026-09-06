@@ -14,14 +14,14 @@ export const getDatabaseConfig = () => {
     entities: [path.join(__dirname, "../database/entities/*{.ts,.js}")],
     migrations: [path.join(__dirname, "../database/migrations/*{.ts,.js}")],
     synchronize: !isProduction,
-    logging: isProduction ? false : ["error"],
-    ssl: isProduction
-      ? {
-          rejectUnauthorized: true,
-        }
-      : {
-          rejectUnauthorized: false,
-        },
+    logging: isProduction ? false : ["error"]
+    // ssl: isProduction
+    //   ? {
+    //       rejectUnauthorized: true,
+    //     }
+    //   : {
+    //       rejectUnauthorized: false,
+    //     },
   });
 };
 

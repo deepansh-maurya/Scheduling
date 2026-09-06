@@ -1,32 +1,44 @@
 import { LessThan, MoreThan } from "typeorm";
 import { AppDataSource } from "../config/database.config";
-import { Meeting, MeetingStatus } from "../database/entities/meeting.entity";
+import {
+  Meeting,
+  MeetingStatus,
+  MeetingType
+} from "../database/entities/meeting.entity";
 import {
   MeetingFilterEnum,
-  MeetingFilterEnumType,
+  MeetingFilterEnumType
 } from "../enums/meeting.enum";
 import { CreateMeetingDto } from "../database/dto/meeting.dto";
 import {
   Event,
-  EventLocationEnumType,
+  EventLocationEnumType
 } from "../database/entities/event.entity";
 import {
   Integration,
   IntegrationAppTypeEnum,
   IntegrationCategoryEnum,
+  IntegrationProviderEnum
 } from "../database/entities/integration.entity";
 import { BadRequestException, NotFoundException } from "../utils/app-error";
 import { validateGoogleToken } from "./integration.service";
 import { googleOAuth2Client } from "../config/oauth.config";
 import { google } from "googleapis";
+import { User } from "../database/entities/user.entity";
 
 export const getUserMeetingsService = async (
   userId: string,
-  filter: MeetingFilterEnumType
+  filter: MeetingFilterEnumType,
+  meetingType: MeetingType
 ) => {
   const meetingRepository = AppDataSource.getRepository(Meeting);
 
   const where: any = { user: { id: userId } };
+
+  where.meetingType =
+    meetingType == MeetingType.CALENDAR_EVENT
+      ? MeetingType.CALENDAR_EVENT
+      : MeetingType.EVENT_BOOKING;
 
   if (filter === MeetingFilterEnum.UPCOMING) {
     where.status = MeetingStatus.SCHEDULED;
@@ -44,10 +56,143 @@ export const getUserMeetingsService = async (
   const meetings = await meetingRepository.find({
     where,
     relations: ["event"],
-    order: { startTime: "ASC" },
+    order: { startTime: "ASC" }
   });
 
   return meetings || [];
+};
+
+export const getmeetingsFromProvidersAndSave = async (userId: string) => {
+  const UserIntegrationsRepo = AppDataSource.getRepository(Integration);
+
+  const MeetingRepo = AppDataSource.getRepository(Meeting);
+
+  const userRepository = AppDataSource.getRepository(User);
+
+  const user = await userRepository.findOne({
+    where: { id: userId }
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const integration = await UserIntegrationsRepo.findOne({
+    where: {
+      userId,
+      provider: IntegrationProviderEnum.GOOGLE
+    }
+  });
+
+  if (!integration) {
+    throw new Error("Google Calendar is not connected");
+  }
+
+  googleOAuth2Client.setCredentials({
+    access_token: integration.access_token,
+    refresh_token: integration.refresh_token
+  });
+
+  const calendar = google.calendar({
+    version: "v3",
+    auth: googleOAuth2Client
+  });
+
+  const response = await calendar.events.list({
+    calendarId: "primary",
+    timeMin: new Date().toISOString(),
+    singleEvents: true,
+    orderBy: "startTime"
+  });
+
+  const events = response.data.items || [];
+
+  for (const googleEvent of events) {
+    if (!googleEvent.id) continue;
+
+    const existingMeeting = await MeetingRepo.findOne({
+      where: {
+        user: {
+          id: userId
+        },
+        calendarEventId: googleEvent.id
+      }
+    });
+
+    const attendees =
+      googleEvent.attendees?.map((attendee) => ({
+        name: attendee.displayName || undefined,
+        email: attendee.email || undefined,
+        responseStatus: attendee.responseStatus || undefined
+      })) || null;
+
+    const startTime = googleEvent.start?.dateTime || googleEvent.start?.date;
+
+    const endTime = googleEvent.end?.dateTime || googleEvent.end?.date;
+
+    if (!startTime || !endTime) continue;
+
+    const meetingData = {
+      title: googleEvent.summary || "",
+      description: googleEvent.description || "",
+      startTime: new Date(startTime),
+      endTime: new Date(endTime),
+      attendees,
+      calendarEventId: googleEvent.id,
+      calendarAppType: IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR,
+      meetingType: MeetingType.CALENDAR_EVENT,
+      status:
+        googleEvent.status === "cancelled"
+          ? MeetingStatus.CANCELLED
+          : MeetingStatus.SCHEDULED,
+      meetLink:
+        googleEvent.hangoutLink ||
+        googleEvent.conferenceData?.entryPoints?.find(
+          (entry) => entry.entryPointType === "video"
+        )?.uri ||
+        null
+    };
+
+    if (existingMeeting) {
+      await MeetingRepo.update(existingMeeting.id, meetingData);
+    } else {
+      const meeting = new Meeting();
+
+      meeting.user = user;
+      meeting.event = null;
+      meeting.title = googleEvent.summary ?? "";
+      meeting.description = googleEvent.description ?? null;
+
+      meeting.startTime = new Date(startTime);
+      meeting.endTime = new Date(endTime);
+
+      meeting.attendees = attendees;
+
+      meeting.calendarEventId = googleEvent.id;
+
+      meeting.calendarAppType = IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR;
+
+      meeting.meetingType = MeetingType.CALENDAR_EVENT;
+
+      meeting.status =
+        googleEvent.status === "cancelled"
+          ? MeetingStatus.CANCELLED
+          : MeetingStatus.SCHEDULED;
+
+      meeting.meetLink =
+        googleEvent.hangoutLink ??
+        googleEvent.conferenceData?.entryPoints?.find(
+          (entry) => entry.entryPointType === "video"
+        )?.uri ??
+        null;
+
+      meeting.guestName = null;
+      meeting.guestEmail = null;
+      meeting.additionalInfo = null;
+
+      await MeetingRepo.save(meeting);
+    }
+  }
 };
 
 export const createMeetBookingForGuestService = async (
@@ -63,7 +208,7 @@ export const createMeetBookingForGuestService = async (
 
   const event = await eventRepository.findOne({
     where: { id: eventId, isPrivate: false },
-    relations: ["user"],
+    relations: ["user"]
   });
 
   if (!event) throw new NotFoundException("Event not found");
@@ -75,8 +220,8 @@ export const createMeetBookingForGuestService = async (
   const meetIntegration = await integrationRepository.findOne({
     where: {
       user: { id: event.user.id },
-      app_type: IntegrationAppTypeEnum[event.locationType],
-    },
+      app_type: IntegrationAppTypeEnum[event.locationType]
+    }
   });
 
   if (!meetIntegration)
@@ -104,10 +249,10 @@ export const createMeetBookingForGuestService = async (
         attendees: [{ email: guestEmail }, { email: event.user.email }],
         conferenceData: {
           createRequest: {
-            requestId: `${event.id}-${Date.now()}`,
-          },
-        },
-      },
+            requestId: `${event.id}-${Date.now()}`
+          }
+        }
+      }
     });
 
     meetLink = response.data.hangoutLink!;
@@ -125,14 +270,15 @@ export const createMeetBookingForGuestService = async (
     endTime,
     meetLink: meetLink,
     calendarEventId: calendarEventId,
-    calendarAppType: calendarAppType,
+    calendarAppType: calendarAppType as IntegrationAppTypeEnum,
+    meetingType: MeetingType.EVENT_BOOKING
   });
 
   await meetingRepository.save(meeting);
 
   return {
     meetLink,
-    meeting,
+    meeting
   };
 };
 
@@ -142,7 +288,7 @@ export const cancelMeetingService = async (meetingId: string) => {
 
   const meeting = await meetingRepository.findOne({
     where: { id: meetingId },
-    relations: ["event", "event.user"],
+    relations: ["event", "event.user"]
   });
   if (!meeting) throw new NotFoundException("Meeting not found");
 
@@ -152,8 +298,8 @@ export const cancelMeetingService = async (meetingId: string) => {
         app_type:
           IntegrationAppTypeEnum[
             meeting.calendarAppType as keyof typeof IntegrationAppTypeEnum
-          ],
-      },
+          ]
+      }
     });
 
     // const calendarIntegration = await integrationRepository.findOne({
@@ -180,7 +326,7 @@ export const cancelMeetingService = async (meetingId: string) => {
         case IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR:
           await calendar.events.delete({
             calendarId: "primary",
-            eventId: meeting.calendarEventId,
+            eventId: meeting.calendarEventId
           });
           break;
         default:
@@ -214,11 +360,11 @@ async function getCalendarClient(
       googleOAuth2Client.setCredentials({ access_token: validToken });
       const calendar = google.calendar({
         version: "v3",
-        auth: googleOAuth2Client,
+        auth: googleOAuth2Client
       });
       return {
         calendar,
-        calendarType: IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR,
+        calendarType: IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR
       };
     default:
       throw new BadRequestException(

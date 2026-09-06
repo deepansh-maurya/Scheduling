@@ -1,6 +1,7 @@
 import useMeetingFilter from "@/hooks/use-meeting-filter";
+import React from "react";
 
-const TabHeader = () => {
+const TabHeader = ({ children }: { children?: React.ReactNode }) => {
   const { PeriodEnum, period, setPeriod } = useMeetingFilter();
 
   return (
@@ -49,6 +50,8 @@ const TabHeader = () => {
               Cancelled
             </button>
           </li>
+
+          <li className="ml-auto">{children}</li>
         </ul>
       </div>
     </div>

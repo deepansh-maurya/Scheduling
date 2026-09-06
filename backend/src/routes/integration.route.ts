@@ -3,8 +3,9 @@ import { passportAuthenticateJwt } from "../config/passport.config";
 import {
   checkIntegrationController,
   connectAppController,
+  dissconnectAppController,
   getUserIntegrationsController,
-  googleOAuthCallbackController,
+  googleOAuthCallbackController
 } from "../controllers/integration.controller";
 
 const integrationRoutes = Router();
@@ -25,6 +26,12 @@ integrationRoutes.get(
   "/connect/:appType",
   passportAuthenticateJwt,
   connectAppController
+);
+
+integrationRoutes.delete(
+  "/dissconnect/:provider",
+  passportAuthenticateJwt,
+  dissconnectAppController
 );
 
 integrationRoutes.get("/google/callback", googleOAuthCallbackController);

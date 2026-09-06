@@ -3,18 +3,19 @@ import {
   Integration,
   IntegrationAppTypeEnum,
   IntegrationCategoryEnum,
-  IntegrationProviderEnum,
+  IntegrationProviderEnum
 } from "../database/entities/integration.entity";
 import { BadRequestException } from "../utils/app-error";
 import { googleOAuth2Client } from "../config/oauth.config";
 import { encodeState } from "../utils/helper";
+import { User } from "../database/entities/user.entity";
 
 const appTypeToProviderMap: Record<
   IntegrationAppTypeEnum,
   IntegrationProviderEnum
 > = {
   [IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR]:
-    IntegrationProviderEnum.GOOGLE,
+    IntegrationProviderEnum.GOOGLE
 };
 
 const appTypeToCategoryMap: Record<
@@ -22,18 +23,18 @@ const appTypeToCategoryMap: Record<
   IntegrationCategoryEnum
 > = {
   [IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR]:
-    IntegrationCategoryEnum.CALENDAR_AND_VIDEO_CONFERENCING,
+    IntegrationCategoryEnum.CALENDAR_AND_VIDEO_CONFERENCING
 };
 
 const appTypeToTitleMap: Record<IntegrationAppTypeEnum, string> = {
-  [IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR]: "Google Meet & Calendar",
+  [IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR]: "Google Meet & Calendar"
 };
 
 export const getUserIntegrationsService = async (userId: string) => {
   const integrationRepository = AppDataSource.getRepository(Integration);
 
   const userIntegrations = await integrationRepository.find({
-    where: { user: { id: userId } },
+    where: { user: { id: userId } }
   });
 
   const connectedMap = new Map(
@@ -46,7 +47,7 @@ export const getUserIntegrationsService = async (userId: string) => {
       title: appTypeToTitleMap[appType],
       app_type: appType,
       category: appTypeToCategoryMap[appType],
-      isConnected: connectedMap.has(appType) || false,
+      isConnected: connectedMap.has(appType) || false
     };
   });
 };
@@ -58,9 +59,9 @@ export const checkIntegrationService = async (
   const integrationRepository = AppDataSource.getRepository(Integration);
 
   const integration = await integrationRepository.findOne({
-    where: { user: { id: userId }, app_type: appType },
+    where: { user: { id: userId }, app_type: appType }
   });
-  
+
   if (!integration) {
     return false;
   }
@@ -82,7 +83,7 @@ export const connectAppService = async (
         access_type: "offline",
         scope: ["https://www.googleapis.com/auth/calendar.events"],
         prompt: "consent",
-        state,
+        state
       });
       break;
     default:
@@ -90,6 +91,35 @@ export const connectAppService = async (
   }
 
   return { url: authUrl };
+};
+
+export const dissconencteService = async (
+  userId: string,
+  appType: IntegrationProviderEnum
+) => {
+  const UserIntegrationsRepo = AppDataSource.getRepository(Integration);
+  const integration = await UserIntegrationsRepo.findOne({
+    where: { userId: userId, provider: IntegrationProviderEnum.GOOGLE }
+  });
+
+  if (!integration) {
+    throw new Error("No integrations found");
+  }
+
+  switch (appType) {
+    case IntegrationProviderEnum.GOOGLE: {
+      await UserIntegrationsRepo.delete({
+        userId,
+        provider: IntegrationProviderEnum.GOOGLE
+      });
+      return {
+        success: true,
+        message: "Google integration disconnected successfully"
+      };
+    }
+    default:
+      throw new Error("Unsupported integration provider");
+  }
 };
 
 export const createIntegrationService = async (data: {
@@ -106,8 +136,8 @@ export const createIntegrationService = async (data: {
   const existingIntegration = await integrationRepository.findOne({
     where: {
       userId: data.userId,
-      app_type: data.app_type,
-    },
+      app_type: data.app_type
+    }
   });
 
   if (existingIntegration) {
@@ -123,7 +153,7 @@ export const createIntegrationService = async (data: {
     expiry_date: data.expiry_date,
     metadata: data.metadata,
     userId: data.userId,
-    isConnected: true,
+    isConnected: true
   });
 
   await integrationRepository.save(integration);
@@ -138,7 +168,7 @@ export const validateGoogleToken = async (
 ) => {
   if (expiryDate === null || Date.now() >= expiryDate) {
     googleOAuth2Client.setCredentials({
-      refresh_token: refreshToken,
+      refresh_token: refreshToken
     });
     const { credentials } = await googleOAuth2Client.refreshAccessToken();
     return credentials.access_token;

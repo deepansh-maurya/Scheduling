@@ -1,11 +1,13 @@
 import {
   IsDateString,
   IsEmail,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUUID,
+  IsUUID
 } from "class-validator";
+import { MeetingType } from "../entities/meeting.entity";
 
 export class CreateMeetingDto {
   @IsString()
@@ -37,4 +39,10 @@ export class MeetingIdDTO {
   @IsUUID(4, { message: "Invaild uuid" })
   @IsNotEmpty()
   meetingId: string;
+}
+
+export class MeetingTypeDto {
+  @IsEnum(MeetingType)
+  @IsNotEmpty()
+  meetingType: MeetingType;
 }

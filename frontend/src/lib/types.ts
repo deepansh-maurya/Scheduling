@@ -8,14 +8,14 @@ export enum IntegrationAppEnum {
   GOOGLE_MEET_AND_CALENDAR = "GOOGLE_MEET_AND_CALENDAR",
   ZOOM_MEETING = "ZOOM_MEETING",
   MICROSOFT_TEAMS = "MICROSOFT_TEAMS",
-  OUTLOOK_CALENDAR = "OUTLOOK_CALENDAR",
+  OUTLOOK_CALENDAR = "OUTLOOK_CALENDAR"
 }
 
 export const IntegrationLogos: Record<IntegrationAppType, string | string[]> = {
   GOOGLE_MEET_AND_CALENDAR: [googleMeetLogo, googleCalendarLogo],
   ZOOM_MEETING: zoomLogo,
   MICROSOFT_TEAMS: microsoftTeamsLogo,
-  OUTLOOK_CALENDAR: outlookCalendarLogo,
+  OUTLOOK_CALENDAR: outlookCalendarLogo
 };
 export type IntegrationAppType =
   | "GOOGLE_MEET_AND_CALENDAR"
@@ -36,33 +36,34 @@ export const IntegrationDescriptions: Record<IntegrationAppType, string> = {
   ZOOM_MEETING: "Include Zoom details in your Meetly events.",
   MICROSOFT_TEAMS:
     "Microsoft Teams integration for video conferencing and collaboration.",
-  OUTLOOK_CALENDAR:
-    "Outlook Calendar integration for scheduling and reminders.",
+  OUTLOOK_CALENDAR: "Outlook Calendar integration for scheduling and reminders."
 };
 
 export enum VideoConferencingPlatform {
   GOOGLE_MEET_AND_CALENDAR = IntegrationAppEnum.GOOGLE_MEET_AND_CALENDAR,
   ZOOM_MEETING = IntegrationAppEnum.ZOOM_MEETING,
-  MICROSOFT_TEAMS = IntegrationAppEnum.MICROSOFT_TEAMS,
+  MICROSOFT_TEAMS = IntegrationAppEnum.MICROSOFT_TEAMS
 }
+
+export type MeetingType = "EVENT_BOOKING" | "CALENDAR_EVENT";
 
 export const locationOptions = [
   {
     label: "Google Meet",
     value: VideoConferencingPlatform.GOOGLE_MEET_AND_CALENDAR,
     logo: IntegrationLogos.GOOGLE_MEET_AND_CALENDAR?.[0],
-    isAvailable: true,
+    isAvailable: true
   },
   {
     label: "Zoom",
     value: VideoConferencingPlatform.ZOOM_MEETING,
     logo: IntegrationLogos.ZOOM_MEETING,
-    isAvailable: false,
+    isAvailable: false
   },
   {
     label: "Microsoft",
     value: VideoConferencingPlatform.MICROSOFT_TEAMS,
     logo: IntegrationLogos.MICROSOFT_TEAMS,
-    isAvailable: false,
-  },
+    isAvailable: false
+  }
 ];

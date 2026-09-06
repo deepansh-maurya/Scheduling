@@ -4,7 +4,7 @@ import {
   Entity,
   ManyToOne,
   PrimaryGeneratedColumn,
-  UpdateDateColumn,
+  UpdateDateColumn
 } from "typeorm";
 import { User } from "./user.entity";
 import { Event } from "./event.entity";
@@ -12,7 +12,18 @@ import { IntegrationAppTypeEnum } from "./integration.entity";
 
 export enum MeetingStatus {
   SCHEDULED = "SCHEDULED",
-  CANCELLED = "CANCELLED",
+  CANCELLED = "CANCELLED"
+}
+
+interface MeetingAttendee {
+  name?: string;
+  email?: string;
+  responseStatus?: string;
+}
+
+export enum MeetingType {
+  EVENT_BOOKING = "EVENT_BOOKING",
+  CALENDAR_EVENT = "CALENDAR_EVENT"
 }
 
 @Entity({ name: "meetings" })
@@ -23,17 +34,23 @@ export class Meeting {
   @ManyToOne(() => User, (user) => user.meetings)
   user: User;
 
-  @ManyToOne(() => Event, (event) => event.meetings)
-  event: Event;
+  @ManyToOne(() => Event, (event) => event.meetings, { nullable: true })
+  event: Event | null;
 
-  @Column()
-  guestName: string;
+  @Column({
+    type: "enum",
+    enum: MeetingType
+  })
+  meetingType: MeetingType;
 
-  @Column()
-  guestEmail: string;
+  @Column({ type: "varchar", nullable: true })
+  guestName: string | null;
 
-  @Column({ nullable: true })
-  additionalInfo: string;
+  @Column({ type: "varchar", nullable: true })
+  guestEmail: string | null;
+
+  @Column({ type: "varchar", nullable: true })
+  additionalInfo: string | null;
 
   @Column()
   startTime: Date;
@@ -41,19 +58,35 @@ export class Meeting {
   @Column()
   endTime: Date;
 
-  @Column()
-  meetLink: string;
+  @Column({
+    type: "varchar",
+    nullable: true
+  })
+  meetLink: string | null;
 
   @Column()
   calendarEventId: string;
 
-  @Column()
-  calendarAppType: string;
+  @Column({ type: "enum", enum: IntegrationAppTypeEnum, nullable: true })
+  calendarAppType: IntegrationAppTypeEnum | null;
+
+  @Column({ type: "jsonb", nullable: true }) attendees:
+    | MeetingAttendee[]
+    | null;
+
+  @Column({
+    type: "varchar",
+    nullable: true
+  })
+  title: string;
+
+  @Column({ type: "text", nullable: true })
+  description: string | null;
 
   @Column({
     type: "enum",
     enum: MeetingStatus,
-    default: MeetingStatus.SCHEDULED,
+    default: MeetingStatus.SCHEDULED
   })
   status: MeetingStatus;
 

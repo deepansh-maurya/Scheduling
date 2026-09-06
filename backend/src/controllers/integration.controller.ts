@@ -5,17 +5,18 @@ import {
   checkIntegrationService,
   connectAppService,
   createIntegrationService,
-  getUserIntegrationsService,
+  dissconencteService,
+  getUserIntegrationsService
 } from "../services/integration.service";
 import { asyncHandlerAndValidation } from "../middlewares/withValidation.middleware";
-import { AppTypeDTO } from "../database/dto/integration.dto";
+import { AppTypeDTO, ProviderDTO } from "../database/dto/integration.dto";
 import { config } from "../config/app.config";
 import { decodeState } from "../utils/helper";
 import { googleOAuth2Client } from "../config/oauth.config";
 import {
   IntegrationAppTypeEnum,
   IntegrationCategoryEnum,
-  IntegrationProviderEnum,
+  IntegrationProviderEnum
 } from "../database/entities/integration.entity";
 
 const CLIENT_APP_URL = config.FRONTEND_INTEGRATION_URL;
@@ -28,7 +29,7 @@ export const getUserIntegrationsController = asyncHandler(
 
     return res.status(HTTPSTATUS.OK).json({
       message: "Fetched user integrations successfully",
-      integrations,
+      integrations
     });
   }
 );
@@ -46,7 +47,7 @@ export const checkIntegrationController = asyncHandlerAndValidation(
 
     return res.status(HTTPSTATUS.OK).json({
       message: "Integration checked successfully",
-      isConnected,
+      isConnected
     });
   }
 );
@@ -60,8 +61,30 @@ export const connectAppController = asyncHandlerAndValidation(
     const { url } = await connectAppService(userId, appTypeDto.appType);
 
     return res.status(HTTPSTATUS.OK).json({
-      url,
+      url
     });
+  }
+);
+
+export const dissconnectAppController = asyncHandlerAndValidation(
+  ProviderDTO,
+  "params",
+  async (req: Request, res: Response, appTypeDto) => {
+    const userId = req.user?.id as string;
+
+    await dissconencteService(userId, appTypeDto.provider);
+
+    return res.status(HTTPSTATUS.OK).json({
+      message: `${appTypeDto.provider} dissconencted successfully`
+    });
+  }
+);
+
+export const syncMeetings = asyncHandlerAndValidation(
+  AppTypeDTO,
+  "params",
+  async (req: Request, res: Response, appTypeDto) => {
+    
   }
 );
 
@@ -101,8 +124,8 @@ export const googleOAuthCallbackController = asyncHandler(
       expiry_date: tokens.expiry_date || null,
       metadata: {
         scope: tokens.scope,
-        token_type: tokens.token_type,
-      },
+        token_type: tokens.token_type
+      }
     });
 
     return res.redirect(`${CLIENT_URL}&success=true`);

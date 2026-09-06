@@ -1,5 +1,5 @@
 import { Fragment, useRef, useState } from "react";
-import { ChevronDown, Trash2Icon } from "lucide-react";
+import { ChevronDown, Mic, Trash2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MeetingType, PeriodType } from "@/types/api.type";
 import { format, parseISO } from "date-fns";
@@ -66,7 +66,7 @@ const MeetingCard = (props: {
             ></span>
           </div>
 
-          <div className="flex-1">
+          <div className="flex-1 flex gap-4">
             <h5>
               <strong>{meeting.guestName}</strong>
             </h5>
@@ -96,32 +96,11 @@ const MeetingCard = (props: {
         className="event-details overflow-hidden transition-all duration-300 ease-in-out"
         style={{
           maxHeight: isShow ? `${detailsRef.current?.scrollHeight}px` : "0px",
-          padding: isShow ? "8px 24px 24px 24px" : "0 24px",
+          padding: isShow ? "8px 24px 24px 24px" : "0 24px"
         }}
       >
         <div className="flex flex-col-reverse md:flex-row pb-5">
-          {period === PeriodEnum.UPCOMING && (
-            <div className="box-border shrink-0 w-[80%] md:w-[310px] pr-[80px] pl-[40px] mb-5">
-              <div>
-                <Button
-                  variant="outline"
-                  type="button"
-                  className="!w-full border-[#476788] text-[#0a2540] font-normal text-sm"
-                  onClick={onCancel}
-                >
-                  {isPending ? (
-                    <Loader color="black" />
-                  ) : (
-                    <Fragment>
-                      <Trash2Icon />
-                      <span>Cancel</span>
-                    </Fragment>
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-          <div className="flex-1">
+          <div className="flex-1 relative">
             <ul>
               <li className="mb-4">
                 <h5 className="inline-block mb-1 font-bold text-sm leading-[14px] uppercase">
@@ -166,6 +145,43 @@ const MeetingCard = (props: {
                   )}
                 </p>
               </li>
+              {period === PeriodEnum.UPCOMING && (
+                <div className="box-border absolute right-[-6%] bottom-0 shrink-0 w-[100%] md:w-[310px] pr-[80px] pl-[40px] mb-5 flex gap-4">
+                  <div className="">
+                    <Button
+                      variant="outline"
+                      type="button"
+                      className="!w-full border-[#476788] text-[#0a2540] font-normal text-sm"
+                      onClick={onCancel}
+                    >
+                      {isPending ? (
+                        <Loader color="black" />
+                      ) : (
+                        <Fragment>
+                          <Trash2Icon />
+                          <span>Cancel</span>
+                        </Fragment>
+                      )}
+                    </Button>
+                  </div>
+                  <div>
+                    <Button
+                      variant="outline"
+                      type="button"
+                      className="!w-full border-[#476788] text-[#0a2540] font-normal text-sm"
+                    >
+                      {isPending ? (
+                        <Loader color="black" />
+                      ) : (
+                        <Fragment>
+                          <Mic />
+                          <span>Record</span>
+                        </Fragment>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </ul>
           </div>
         </div>
