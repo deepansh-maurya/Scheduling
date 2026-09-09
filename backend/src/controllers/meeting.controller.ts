@@ -9,6 +9,7 @@ import {
   cancelMeetingService,
   createMeetBookingForGuestService,
   getmeetingsFromProvidersAndSave,
+  getOutlookMeetingsFromProviderAndSave,
   getUserMeetingsService
 } from "../services/meeting.service";
 import { asyncHandlerAndValidation } from "../middlewares/withValidation.middleware";
@@ -45,7 +46,7 @@ export const syncMeetings = asyncHandler(
     const userId = req.user?.id as string;
 
     await getmeetingsFromProvidersAndSave(userId);
-
+    await getOutlookMeetingsFromProviderAndSave(userId);
     return res.status(HTTPSTATUS.OK).json({
       message: "Meetings synced successfully"
     });

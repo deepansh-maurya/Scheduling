@@ -12,7 +12,7 @@ import { asyncHandlerAndValidation } from "../middlewares/withValidation.middlew
 import { AppTypeDTO, ProviderDTO } from "../database/dto/integration.dto";
 import { config } from "../config/app.config";
 import { decodeState } from "../utils/helper";
-import { googleOAuth2Client } from "../config/oauth.config";
+import { googleOAuth2Client, microsoftClient } from "../config/oauth.config";
 import {
   IntegrationAppTypeEnum,
   IntegrationCategoryEnum,
@@ -80,14 +80,6 @@ export const dissconnectAppController = asyncHandlerAndValidation(
   }
 );
 
-export const syncMeetings = asyncHandlerAndValidation(
-  AppTypeDTO,
-  "params",
-  async (req: Request, res: Response, appTypeDto) => {
-    
-  }
-);
-
 export const googleOAuthCallbackController = asyncHandler(
   async (req: Request, res: Response) => {
     const { code, state } = req.query;
@@ -129,5 +121,81 @@ export const googleOAuthCallbackController = asyncHandler(
     });
 
     return res.redirect(`${CLIENT_URL}&success=true`);
+  }
+);
+
+export const microfostOauthCallbackController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { code, state } = req.query;
+
+    console.log(code, state);
+
+    const CLIENT_URL = `${CLIENT_APP_URL}?app_type=microsoft`;
+
+    // Validate authorization code
+    if (!code || typeof code !== "string") {
+      return res.redirect(`${CLIENT_URL}&error=Invalid authorization`);
+    }
+
+    // Validate state
+    if (!state || typeof state !== "string") {
+      return res.redirect(`${CLIENT_URL}&error=Invalid state parameter`);
+    }
+
+    // Get Meetly user ID from OAuth state
+    const { userId } = decodeState(state);
+
+    if (!userId) {
+      return res.redirect(`${CLIENT_URL}&error=UserId is required`);
+    }
+
+    try {
+      const tokenResponse = await microsoftClient.acquireTokenByCode({
+        code,
+
+        scopes: [
+          "openid",
+          "profile",
+          "email",
+          "offline_access",
+          "User.Read",
+          "Calendars.ReadWrite"
+        ],
+
+        redirectUri: process.env.MICROSOFT_REDIRECT_URI!
+      });
+
+      console.log(tokenResponse);
+
+      if (!tokenResponse?.accessToken) {
+        return res.redirect(`${CLIENT_URL}&error=Access Token not received`);
+      }
+
+      await createIntegrationService({
+        userId,
+        provider: IntegrationProviderEnum.MICROSOFT,
+        category: IntegrationCategoryEnum.CALENDAR_AND_VIDEO_CONFERENCING,
+        app_type: IntegrationAppTypeEnum.MICROSOFT_TEAMS_AND_OUTLOOK,
+        access_token: tokenResponse.accessToken,
+        refresh_token: undefined,
+        expiry_date: tokenResponse.expiresOn
+          ? tokenResponse.expiresOn.getTime()
+          : null,
+        metadata: {
+          scope: tokenResponse.scopes?.join(" ") || "",
+          token_type: "Bearer",
+          homeAccountId: tokenResponse.account?.homeAccountId,
+          username: tokenResponse.account?.username
+        }
+      });
+
+      return res.redirect(`${CLIENT_URL}&success=true`);
+    } catch (error) {
+      console.error("Microsoft OAuth callback error:", error);
+
+      return res.redirect(
+        `${CLIENT_URL}&error=Failed to connect Microsoft account`
+      );
+    }
   }
 );

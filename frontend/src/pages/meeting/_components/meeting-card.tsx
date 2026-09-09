@@ -29,7 +29,7 @@ const MeetingCard = (props: {
   )}`;
 
   const locationOption = locationOptions.find(
-    (option) => option.value === meeting.event.locationType
+    (option) => option.value === meeting?.event?.locationType
   );
 
   const toggleDetails = () => {
@@ -71,7 +71,7 @@ const MeetingCard = (props: {
               <strong>{meeting.guestName}</strong>
             </h5>
             <p>
-              Event type <strong> {meeting.event.title}</strong>
+              Event type <strong> {meeting?.event?.title}</strong>
             </p>
           </div>
           {/* {Meeting detail Button} */}

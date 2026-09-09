@@ -8,7 +8,7 @@ import { ErrorAlert } from "@/components/ErrorAlert";
 const Integrations = () => {
   const { data, isFetching, isError, error } = useQuery({
     queryKey: ["integration_list"],
-    queryFn: getAllIntegrationQueryFn,
+    queryFn: getAllIntegrationQueryFn
   });
 
   const integrations = data?.integrations || [];
@@ -35,7 +35,8 @@ const Integrations = () => {
                   <IntegrationCard
                     key={integration.app_type}
                     isDisabled={
-                      integration.app_type === "GOOGLE_MEET_AND_CALENDAR"
+                      integration.app_type === "GOOGLE_MEET_AND_CALENDAR" ||
+                      integration.app_type == "MICROSOFT_TEAMS_AND_OUTLOOK"
                         ? false
                         : true
                     }

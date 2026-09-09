@@ -5,7 +5,7 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
-  UpdateDateColumn,
+  UpdateDateColumn
 } from "typeorm";
 import { IntegrationAppTypeEnum } from "./integration.entity";
 import { User } from "./user.entity";
@@ -13,6 +13,7 @@ import { Meeting } from "./meeting.entity";
 
 export enum EventLocationEnumType {
   GOOGLE_MEET_AND_CALENDAR = IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR,
+  MICROSOFT_TEAMS_AND_OUTLOOK = IntegrationAppTypeEnum.MICROSOFT_TEAMS_AND_OUTLOOK
 }
 
 @Entity({ name: "events" })

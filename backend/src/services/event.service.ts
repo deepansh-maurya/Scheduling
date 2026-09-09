@@ -23,7 +23,7 @@ export const createEventService = async (
   const slug = slugify(createEventDto.title);
 
   const event = eventRepository.create({
-    ...createEventDto,
+    ...createEventDto,  
     slug,
     user: { id: userId },
   });

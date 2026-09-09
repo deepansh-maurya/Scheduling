@@ -25,6 +25,7 @@ import { validateGoogleToken } from "./integration.service";
 import { googleOAuth2Client } from "../config/oauth.config";
 import { google } from "googleapis";
 import { User } from "../database/entities/user.entity";
+import axios from "axios";
 
 export const getUserMeetingsService = async (
   userId: string,
@@ -119,6 +120,13 @@ export const getmeetingsFromProvidersAndSave = async (userId: string) => {
       }
     });
 
+    if (
+      existingMeeting &&
+      existingMeeting.meetingType === MeetingType.EVENT_BOOKING
+    ) {
+      continue;
+    }
+
     const attendees =
       googleEvent.attendees?.map((attendee) => ({
         name: attendee.displayName || undefined,
@@ -193,6 +201,132 @@ export const getmeetingsFromProvidersAndSave = async (userId: string) => {
       await MeetingRepo.save(meeting);
     }
   }
+};
+
+export const getOutlookMeetingsFromProviderAndSave = async (userId: string) => {
+  const UserIntegrationsRepo = AppDataSource.getRepository(Integration);
+  const MeetingRepo = AppDataSource.getRepository(Meeting);
+  const userRepository = AppDataSource.getRepository(User);
+
+  const user = await userRepository.findOne({
+    where: { id: userId }
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const integration = await UserIntegrationsRepo.findOne({
+    where: {
+      userId,
+      provider: IntegrationProviderEnum.MICROSOFT
+    }
+  });
+
+  if (!integration) {
+    throw new Error("Microsoft Outlook Calendar is not connected");
+  }
+
+  const response = await axios.get(
+    "https://graph.microsoft.com/v1.0/me/events",
+    {
+      headers: {
+        Authorization: `Bearer ${integration.access_token}`
+      },
+
+      params: {
+        $orderby: "start/dateTime",
+        $top: 100
+      }
+    }
+  );
+
+  const events = response.data.value || [];
+
+  for (const outlookEvent of events) {
+    if (!outlookEvent.id) {
+      continue;
+    }
+
+    const existingMeeting = await MeetingRepo.findOne({
+      where: {
+        user: {
+          id: userId
+        },
+
+        calendarEventId: outlookEvent.id
+      }
+    });
+
+    if (
+      existingMeeting &&
+      existingMeeting.meetingType === MeetingType.EVENT_BOOKING
+    ) {
+      continue;
+    }
+
+    const attendees =
+      outlookEvent.attendees?.map((attendee: any) => ({
+        name: attendee.emailAddress?.name || undefined,
+
+        email: attendee.emailAddress?.address || undefined,
+
+        responseStatus: attendee.status?.response || undefined
+      })) || null;
+
+    const startTime = outlookEvent.start?.dateTime;
+
+    const endTime = outlookEvent.end?.dateTime;
+
+    if (!startTime || !endTime) {
+      continue;
+    }
+
+    const meetLink = outlookEvent.onlineMeeting?.joinUrl || null;
+
+    const meetingData = {
+      title: outlookEvent.subject || "",
+      description: outlookEvent.bodyPreview || null,
+      startTime: new Date(startTime),
+      endTime: new Date(endTime),
+      attendees,
+      calendarEventId: outlookEvent.id,
+      calendarAppType: IntegrationAppTypeEnum.MICROSOFT_TEAMS_AND_OUTLOOK,
+      meetingType: MeetingType.CALENDAR_EVENT,
+      status: outlookEvent.isCancelled
+        ? MeetingStatus.CANCELLED
+        : MeetingStatus.SCHEDULED,
+      meetLink
+    };
+
+    if (existingMeeting) {
+      await MeetingRepo.update(existingMeeting.id, meetingData);
+    } else {
+      const meeting = new Meeting();
+      meeting.user = user;
+      meeting.event = null;
+      meeting.title = meetingData.title;
+      meeting.description = meetingData.description;
+      meeting.startTime = meetingData.startTime;
+      meeting.endTime = meetingData.endTime;
+      meeting.attendees = meetingData.attendees;
+      meeting.calendarEventId = meetingData.calendarEventId;
+      meeting.calendarAppType = meetingData.calendarAppType;
+      meeting.meetingType = meetingData.meetingType;
+      meeting.status = meetingData.status;
+      meeting.meetLink = meetingData.meetLink;
+      meeting.guestName = null;
+      meeting.guestEmail = null;
+      meeting.additionalInfo = null;
+      await MeetingRepo.save(meeting);
+    }
+  }
+
+  return {
+    message: "Outlook Calendar meetings synchronized successfully",
+
+    count: events.length
+  };
 };
 
 export const createMeetBookingForGuestService = async (

@@ -1,11 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import TabHeader from "./_components/tab-header";
 import { Separator } from "@/components/ui/separator";
 import TabPanel from "./_components/tab-panel";
 import useMeetingFilter from "@/hooks/use-meeting-filter";
 import PageTitle from "@/components/PageTitle";
-import { getUserMeetingsQueryFn } from "@/lib/api";
+import { getUserMeetingsQueryFn, syncMeetings } from "@/lib/api";
 import { ErrorAlert } from "@/components/ErrorAlert";
 import { Loader } from "@/components/loader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,6 +23,22 @@ const Meetings = () => {
   });
 
   const meetings = data?.meetings || [];
+
+  const queryClient = useQueryClient();
+
+  const { mutate: syncMeetingsMutation, isPending: isSyncing } = useMutation({
+    mutationFn: syncMeetings,
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["userMeetings"]
+      });
+    },
+
+    onError: (error) => {
+      console.error("Failed to sync meetings:", error);
+    }
+  });
 
   return (
     <div className="flex flex-col !gap-3">
@@ -77,8 +93,13 @@ const Meetings = () => {
               >
                 <CardContent className="p-0 pb-3">
                   <TabHeader>
-                    <Button className="bg-transparent hover:bg-transparent text-black ">
-                      <RefreshCcw /> Sync Meetings
+                    <Button
+                      onClick={() => syncMeetingsMutation()}
+                      disabled={isSyncing}
+                      className="bg-transparent hover:bg-transparent text-black "
+                    >
+                      <RefreshCcw className={isSyncing ? "animate-spin" : ""} />{" "}
+                      Sync Meetings
                     </Button>
                   </TabHeader>
                   <Separator className="border-[#D4E16F]" />

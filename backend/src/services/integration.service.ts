@@ -6,7 +6,7 @@ import {
   IntegrationProviderEnum
 } from "../database/entities/integration.entity";
 import { BadRequestException } from "../utils/app-error";
-import { googleOAuth2Client } from "../config/oauth.config";
+import { googleOAuth2Client, microsoftClient } from "../config/oauth.config";
 import { encodeState } from "../utils/helper";
 import { User } from "../database/entities/user.entity";
 
@@ -15,7 +15,9 @@ const appTypeToProviderMap: Record<
   IntegrationProviderEnum
 > = {
   [IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR]:
-    IntegrationProviderEnum.GOOGLE
+    IntegrationProviderEnum.GOOGLE,
+  [IntegrationAppTypeEnum.MICROSOFT_TEAMS_AND_OUTLOOK]:
+    IntegrationProviderEnum.MICROSOFT
 };
 
 const appTypeToCategoryMap: Record<
@@ -23,11 +25,15 @@ const appTypeToCategoryMap: Record<
   IntegrationCategoryEnum
 > = {
   [IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR]:
+    IntegrationCategoryEnum.CALENDAR_AND_VIDEO_CONFERENCING,
+  [IntegrationAppTypeEnum.MICROSOFT_TEAMS_AND_OUTLOOK]:
     IntegrationCategoryEnum.CALENDAR_AND_VIDEO_CONFERENCING
 };
 
 const appTypeToTitleMap: Record<IntegrationAppTypeEnum, string> = {
-  [IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR]: "Google Meet & Calendar"
+  [IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR]: "Google Meet & Calendar",
+  [IntegrationAppTypeEnum.MICROSOFT_TEAMS_AND_OUTLOOK]:
+    "Microsoft Teams & Outlook"
 };
 
 export const getUserIntegrationsService = async (userId: string) => {
@@ -40,6 +46,8 @@ export const getUserIntegrationsService = async (userId: string) => {
   const connectedMap = new Map(
     userIntegrations.map((integration) => [integration.app_type, true])
   );
+
+  console.log(connectedMap);
 
   return Object.values(IntegrationAppTypeEnum).flatMap((appType) => {
     return {
@@ -83,6 +91,20 @@ export const connectAppService = async (
         access_type: "offline",
         scope: ["https://www.googleapis.com/auth/calendar.events"],
         prompt: "consent",
+        state
+      });
+      break;
+    case IntegrationAppTypeEnum.MICROSOFT_TEAMS_AND_OUTLOOK:
+      authUrl = await microsoftClient.getAuthCodeUrl({
+        scopes: [
+          "openid",
+          "profile",
+          "email",
+          "offline_access",
+          "User.Read",
+          "Calendars.ReadWrite"
+        ],
+        redirectUri: process.env.MICROSOFT_REDIRECT_URI!,
         state
       });
       break;
@@ -139,6 +161,8 @@ export const createIntegrationService = async (data: {
       app_type: data.app_type
     }
   });
+
+  console.log(existingIntegration);
 
   if (existingIntegration) {
     throw new BadRequestException(`${data.app_type} already connected`);

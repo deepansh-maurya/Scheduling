@@ -5,7 +5,8 @@ import {
   connectAppController,
   dissconnectAppController,
   getUserIntegrationsController,
-  googleOAuthCallbackController
+  googleOAuthCallbackController,
+  microfostOauthCallbackController
 } from "../controllers/integration.controller";
 
 const integrationRoutes = Router();
@@ -35,5 +36,7 @@ integrationRoutes.delete(
 );
 
 integrationRoutes.get("/google/callback", googleOAuthCallbackController);
+
+integrationRoutes.get("/microsoft/callback", microfostOauthCallbackController);
 
 export default integrationRoutes;

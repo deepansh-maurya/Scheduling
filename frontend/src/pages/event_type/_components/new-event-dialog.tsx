@@ -9,14 +9,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogTrigger
 } from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
-  FormMessage,
+  FormMessage
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,7 +36,7 @@ const NewEventDialog = (props: { btnVariant?: string }) => {
 
   const queryClient = useQueryClient();
   const { mutate, isPending } = useMutation({
-    mutationFn: CreateEventMutationFn,
+    mutationFn: CreateEventMutationFn
   });
 
   const [selectedLocationType, setSelectedLocationType] =
@@ -58,11 +58,11 @@ const NewEventDialog = (props: { btnVariant?: string }) => {
       .enum([
         VideoConferencingPlatform.GOOGLE_MEET_AND_CALENDAR,
         VideoConferencingPlatform.ZOOM_MEETING,
-        VideoConferencingPlatform.MICROSOFT_TEAMS,
+        VideoConferencingPlatform.MICROSOFT_TEAMS_AND_OUTLOOK
       ])
       .refine((value) => value !== undefined, {
-        message: "Location type is required",
-      }),
+        message: "Location type is required"
+      })
   });
 
   type EventFormData = z.infer<typeof eventSchema>;
@@ -73,8 +73,8 @@ const NewEventDialog = (props: { btnVariant?: string }) => {
     defaultValues: {
       title: "",
       duration: 30,
-      description: "",
-    },
+      description: ""
+    }
   });
 
   const { isValid } = form.formState;
@@ -106,6 +106,31 @@ const NewEventDialog = (props: { btnVariant?: string }) => {
       } finally {
         setIsChecking(false);
       }
+    } else if (
+      value === VideoConferencingPlatform.MICROSOFT_TEAMS_AND_OUTLOOK
+    ) {
+      setIsChecking(true);
+      try {
+        const { isConnected } = await checkIntegrationQueryFn(
+          VideoConferencingPlatform.MICROSOFT_TEAMS_AND_OUTLOOK
+        );
+
+        if (!isConnected) {
+          setError(
+            `MIcrosoft is not connected. <a href=${PROTECTED_ROUTES.INTEGRATIONS} target="_blank" class='underline text-primary'>Visit the integration page</a> to connect your account.`
+          );
+          return;
+        }
+        setError(null);
+        setAppConnected(true);
+        form.setValue("locationType", value);
+        form.trigger("locationType");
+      } catch (error) {
+        console.log(error);
+        setError("Failed to check Google Meet integration status.");
+      } finally {
+        setIsChecking(false);
+      }
     } else {
       setError(null);
       form.setValue("locationType", value);
@@ -118,12 +143,12 @@ const NewEventDialog = (props: { btnVariant?: string }) => {
       {
         ...data,
         duration: data.duration,
-        description: data.description || "",
+        description: data.description || ""
       },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({
-            queryKey: ["event_list"],
+            queryKey: ["event_list"]
           });
           setSelectedLocationType(null);
           setIsOpen(false);
@@ -133,7 +158,7 @@ const NewEventDialog = (props: { btnVariant?: string }) => {
         },
         onError: () => {
           toast.success("Failed to create event");
-        },
+        }
       }
     );
   };
@@ -283,7 +308,7 @@ const NewEventDialog = (props: { btnVariant?: string }) => {
                       <FormMessage>
                         <span
                           dangerouslySetInnerHTML={{
-                            __html: error,
+                            __html: error
                           }}
                         />
                       </FormMessage>

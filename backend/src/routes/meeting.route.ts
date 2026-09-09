@@ -2,7 +2,8 @@ import { Router } from "express";
 import {
   cancelMeetingController,
   createMeetBookingForGuestController,
-  getUserMeetingsController
+  getUserMeetingsController,
+  syncMeetings
 } from "../controllers/meeting.controller";
 import { passportAuthenticateJwt } from "../config/passport.config";
 
@@ -16,7 +17,7 @@ meetingRoutes.get(
 
 meetingRoutes.post("/public/create", createMeetBookingForGuestController);
 
-meetingRoutes.post("/meeting/sync",passportAuthenticateJwt,)
+meetingRoutes.post("/sync", passportAuthenticateJwt, syncMeetings);
 
 meetingRoutes.put(
   "/cancel/:meetingId",

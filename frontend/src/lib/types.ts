@@ -1,48 +1,43 @@
 import googleMeetLogo from "@/assets/google-meet.svg";
 import googleCalendarLogo from "@/assets/google-calendar.svg";
-import outlookCalendarLogo from "@/assets/microsoft-outlook.svg";
 import microsoftTeamsLogo from "@/assets/microsoft-teams.svg";
 import zoomLogo from "@/assets/zoom.svg";
 
 export enum IntegrationAppEnum {
   GOOGLE_MEET_AND_CALENDAR = "GOOGLE_MEET_AND_CALENDAR",
   ZOOM_MEETING = "ZOOM_MEETING",
-  MICROSOFT_TEAMS = "MICROSOFT_TEAMS",
+  MICROSOFT_TEAMS_AND_OUTLOOK = "MICROSOFT_TEAMS_AND_OUTLOOK",
   OUTLOOK_CALENDAR = "OUTLOOK_CALENDAR"
 }
 
 export const IntegrationLogos: Record<IntegrationAppType, string | string[]> = {
   GOOGLE_MEET_AND_CALENDAR: [googleMeetLogo, googleCalendarLogo],
   ZOOM_MEETING: zoomLogo,
-  MICROSOFT_TEAMS: microsoftTeamsLogo,
-  OUTLOOK_CALENDAR: outlookCalendarLogo
+  MICROSOFT_TEAMS_AND_OUTLOOK: microsoftTeamsLogo
 };
+
 export type IntegrationAppType =
   | "GOOGLE_MEET_AND_CALENDAR"
   | "ZOOM_MEETING"
-  | "MICROSOFT_TEAMS"
-  | "OUTLOOK_CALENDAR";
+  | "MICROSOFT_TEAMS_AND_OUTLOOK";
 
 export type IntegrationTitleType =
   | "Google Meet & Calendar"
   | "Zoom"
-  | "Microsoft Teams"
-  | "Outlook Calendar";
+  | "Microsoft Teams";
 
-// Integration Descriptions
 export const IntegrationDescriptions: Record<IntegrationAppType, string> = {
   GOOGLE_MEET_AND_CALENDAR:
     "Include Google Meet details in your Meetly events and sync with Google Calendar.",
   ZOOM_MEETING: "Include Zoom details in your Meetly events.",
-  MICROSOFT_TEAMS:
-    "Microsoft Teams integration for video conferencing and collaboration.",
-  OUTLOOK_CALENDAR: "Outlook Calendar integration for scheduling and reminders."
+  MICROSOFT_TEAMS_AND_OUTLOOK:
+    "Microsoft Teams integration for video conferencing and collaboration."
 };
 
 export enum VideoConferencingPlatform {
   GOOGLE_MEET_AND_CALENDAR = IntegrationAppEnum.GOOGLE_MEET_AND_CALENDAR,
   ZOOM_MEETING = IntegrationAppEnum.ZOOM_MEETING,
-  MICROSOFT_TEAMS = IntegrationAppEnum.MICROSOFT_TEAMS
+  MICROSOFT_TEAMS_AND_OUTLOOK = IntegrationAppEnum.MICROSOFT_TEAMS_AND_OUTLOOK
 }
 
 export type MeetingType = "EVENT_BOOKING" | "CALENDAR_EVENT";
@@ -62,8 +57,8 @@ export const locationOptions = [
   },
   {
     label: "Microsoft",
-    value: VideoConferencingPlatform.MICROSOFT_TEAMS,
-    logo: IntegrationLogos.MICROSOFT_TEAMS,
-    isAvailable: false
+    value: VideoConferencingPlatform.MICROSOFT_TEAMS_AND_OUTLOOK,
+    logo: IntegrationLogos.MICROSOFT_TEAMS_AND_OUTLOOK,
+    isAvailable: true
   }
 ];

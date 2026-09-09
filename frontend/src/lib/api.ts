@@ -102,6 +102,10 @@ export const cancelMeetingMutationFn = async (meetingId: string) => {
   return response.data;
 };
 
+export const syncMeetings = async () => {
+  await API.post(`/meeting/sync`);
+};
+
 // export const syncMeetings
 
 //*********** */ All EXTERNAL/PUBLIC APIS
