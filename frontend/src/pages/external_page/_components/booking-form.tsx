@@ -106,7 +106,7 @@ const BookingForm = (props: { eventId: string; duration: number }) => {
           <a href={meetLink} target="_blank" rel="noopener noreferrer">
             <Button>
               <ExternalLink className="w-4 h-4" />
-              <span>Join Google Meet</span>
+              <span>Join Meet</span>
             </Button>
           </a>
         </div>

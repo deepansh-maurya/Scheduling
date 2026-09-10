@@ -5,20 +5,22 @@ import zoomLogo from "@/assets/zoom.svg";
 
 export enum IntegrationAppEnum {
   GOOGLE_MEET_AND_CALENDAR = "GOOGLE_MEET_AND_CALENDAR",
-  ZOOM_MEETING = "ZOOM_MEETING",
+  ZOOM = "ZOOM",
   MICROSOFT_TEAMS_AND_OUTLOOK = "MICROSOFT_TEAMS_AND_OUTLOOK",
   OUTLOOK_CALENDAR = "OUTLOOK_CALENDAR"
 }
 
 export const IntegrationLogos: Record<IntegrationAppType, string | string[]> = {
   GOOGLE_MEET_AND_CALENDAR: [googleMeetLogo, googleCalendarLogo],
-  ZOOM_MEETING: zoomLogo,
+  ZOOM: zoomLogo,
   MICROSOFT_TEAMS_AND_OUTLOOK: microsoftTeamsLogo
 };
 
+export type IntegrationProviderType = "GOOGLE" | "MICROSOFT" | "ZOOM";
+
 export type IntegrationAppType =
   | "GOOGLE_MEET_AND_CALENDAR"
-  | "ZOOM_MEETING"
+  | "ZOOM"
   | "MICROSOFT_TEAMS_AND_OUTLOOK";
 
 export type IntegrationTitleType =
@@ -29,14 +31,14 @@ export type IntegrationTitleType =
 export const IntegrationDescriptions: Record<IntegrationAppType, string> = {
   GOOGLE_MEET_AND_CALENDAR:
     "Include Google Meet details in your Meetly events and sync with Google Calendar.",
-  ZOOM_MEETING: "Include Zoom details in your Meetly events.",
+  ZOOM: "Include Zoom details in your Meetly events.",
   MICROSOFT_TEAMS_AND_OUTLOOK:
     "Microsoft Teams integration for video conferencing and collaboration."
 };
 
 export enum VideoConferencingPlatform {
   GOOGLE_MEET_AND_CALENDAR = IntegrationAppEnum.GOOGLE_MEET_AND_CALENDAR,
-  ZOOM_MEETING = IntegrationAppEnum.ZOOM_MEETING,
+  ZOOM = IntegrationAppEnum.ZOOM,
   MICROSOFT_TEAMS_AND_OUTLOOK = IntegrationAppEnum.MICROSOFT_TEAMS_AND_OUTLOOK
 }
 
@@ -51,9 +53,9 @@ export const locationOptions = [
   },
   {
     label: "Zoom",
-    value: VideoConferencingPlatform.ZOOM_MEETING,
-    logo: IntegrationLogos.ZOOM_MEETING,
-    isAvailable: false
+    value: VideoConferencingPlatform.ZOOM,
+    logo: IntegrationLogos.ZOOM,
+    isAvailable: true
   },
   {
     label: "Microsoft",

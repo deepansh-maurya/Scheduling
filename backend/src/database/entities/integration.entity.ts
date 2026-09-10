@@ -11,18 +11,20 @@ import { User } from "./user.entity";
 
 export enum IntegrationProviderEnum {
   GOOGLE = "GOOGLE",
-  MICROSOFT = "MICROSOFT"
+  MICROSOFT = "MICROSOFT",
+  ZOOM = "ZOOM"
 }
 
 export enum IntegrationAppTypeEnum {
   GOOGLE_MEET_AND_CALENDAR = "GOOGLE_MEET_AND_CALENDAR",
-  MICROSOFT_TEAMS_AND_OUTLOOK = "MICROSOFT_TEAMS_AND_OUTLOOK"
+  MICROSOFT_TEAMS_AND_OUTLOOK = "MICROSOFT_TEAMS_AND_OUTLOOK",
+  ZOOM = "ZOOM"
 }
 
 export enum IntegrationCategoryEnum {
   CALENDAR_AND_VIDEO_CONFERENCING = "CALENDAR_AND_VIDEO_CONFERENCING",
   VIDEO_CONFERENCING = "VIDEO_CONFERENCING",
-  CALENDAR = "CALENDAR"
+  ZOOM = "ZOOM"
 }
 
 interface GoogleMeetAndCalendarMetadata {
@@ -30,9 +32,16 @@ interface GoogleMeetAndCalendarMetadata {
   token_type: string;
 }
 
+interface MicrosoftTeamsAndOutlookMetadata {
+  [key: string]: any;
+}
+
 interface ZoomMetadata {}
 
-type IntegrationMetadata = GoogleMeetAndCalendarMetadata | ZoomMetadata;
+type IntegrationMetadata =
+  | GoogleMeetAndCalendarMetadata
+  | ZoomMetadata
+  | MicrosoftTeamsAndOutlookMetadata;
 
 @Entity({ name: "integrations" })
 export class Integration {

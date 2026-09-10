@@ -11,26 +11,26 @@ const EventListSection = (props: { events: EventType[]; username: string }) => {
 
   const queryClient = useQueryClient();
   const { mutate, isPending } = useMutation({
-    mutationFn: toggleEventVisibilityMutationFn,
+    mutationFn: toggleEventVisibilityMutationFn
   });
 
   const toggleEventVisibility = (eventId: string) => {
     setPendingEventId(eventId);
     mutate(
       {
-        eventId: eventId,
+        eventId: eventId
       },
       {
         onSuccess: (response) => {
           queryClient.invalidateQueries({
-            queryKey: ["event_list"],
+            queryKey: ["event_list"]
           });
           setPendingEventId(null);
           toast.success(`${response.message}`);
         },
-        onError: () => {
-          toast.success("Failed to switch event");
-        },
+        onError: (error) => {
+          toast.success(error.message);
+        }
       }
     );
   };

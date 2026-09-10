@@ -57,7 +57,7 @@ const NewEventDialog = (props: { btnVariant?: string }) => {
     locationType: z
       .enum([
         VideoConferencingPlatform.GOOGLE_MEET_AND_CALENDAR,
-        VideoConferencingPlatform.ZOOM_MEETING,
+        VideoConferencingPlatform.ZOOM,
         VideoConferencingPlatform.MICROSOFT_TEAMS_AND_OUTLOOK
       ])
       .refine((value) => value !== undefined, {
@@ -118,6 +118,29 @@ const NewEventDialog = (props: { btnVariant?: string }) => {
         if (!isConnected) {
           setError(
             `MIcrosoft is not connected. <a href=${PROTECTED_ROUTES.INTEGRATIONS} target="_blank" class='underline text-primary'>Visit the integration page</a> to connect your account.`
+          );
+          return;
+        }
+        setError(null);
+        setAppConnected(true);
+        form.setValue("locationType", value);
+        form.trigger("locationType");
+      } catch (error) {
+        console.log(error);
+        setError("Failed to check Google Meet integration status.");
+      } finally {
+        setIsChecking(false);
+      }
+    } else if (value === VideoConferencingPlatform.ZOOM) {
+      setIsChecking(true);
+      try {
+        const { isConnected } = await checkIntegrationQueryFn(
+          VideoConferencingPlatform.ZOOM
+        );
+
+        if (!isConnected) {
+          setError(
+            `Zoom is not connected. <a href=${PROTECTED_ROUTES.INTEGRATIONS} target="_blank" class='underline text-primary'>Visit the integration page</a> to connect your account.`
           );
           return;
         }

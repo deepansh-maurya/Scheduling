@@ -7,19 +7,25 @@ import {
   Card,
   CardDescription,
   CardHeader,
-  CardTitle,
+  CardTitle
 } from "@/components/ui/card";
-import { connectAppIntegrationQueryFn } from "@/lib/api";
+import {
+  connectAppIntegrationQueryFn,
+  dissconnectAppIntegrationQueryFn
+} from "@/lib/api";
 import {
   IntegrationAppEnum,
   IntegrationAppType,
   IntegrationDescriptions,
   IntegrationLogos,
+  IntegrationProviderType
 } from "@/lib/types";
 import { PlusIcon } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface IntegrationCardProps {
   appType: IntegrationAppType;
+  providerType: IntegrationProviderType;
   title: string;
   isConnected?: boolean;
   isDisabled?: boolean;
@@ -35,19 +41,20 @@ interface ImageWrapperProps {
 
 const SUCCESS_MESSAGES: Record<any, string> = {
   [IntegrationAppEnum.GOOGLE_MEET_AND_CALENDAR]:
-    "Google Calendar connected successfully!",
+    "Google Calendar connected successfully!"
 };
 
 const ERROR_MESSAGES: Record<any, string> = {
   [IntegrationAppEnum.GOOGLE_MEET_AND_CALENDAR]:
-    "Failed to connect Google Calendar. Please try again.",
+    "Failed to connect Google Calendar. Please try again."
 };
 
 const IntegrationCard = ({
   appType,
+  providerType,
   title,
   isConnected = false,
-  isDisabled = false,
+  isDisabled = false
 }: IntegrationCardProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedType, setSelectedType] = useState<IntegrationAppType | null>(
@@ -56,6 +63,17 @@ const IntegrationCard = ({
 
   const logos = IntegrationLogos[appType];
   const description = IntegrationDescriptions[appType];
+
+  const queryClient = useQueryClient();
+
+  const disconnectMutation = useMutation({
+    mutationFn: dissconnectAppIntegrationQueryFn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["integration_list"]
+      });
+    }
+  });
 
   const handleConnect = async (appType: IntegrationAppType) => {
     setSelectedType(appType);
@@ -93,15 +111,18 @@ const IntegrationCard = ({
       </CardHeader>
       <div className="flex flex-col items-center gap-2 p-4">
         {isConnected ? (
-          <div
-            className="inline-flex items-center 
+          <button
+            onClick={() => {
+              disconnectMutation.mutate(providerType);
+            }}
+            className="inline-flex items-center  cursor-pointer
               justify-center min-h-[44px] text-sm
               border border-primary
               text-primary
                p-[8px_16px] rounded-full font-bold w-[180px]"
           >
-            Connected
-          </div>
+            Dissconnect
+          </button>
         ) : (
           <Button
             onClick={() => handleConnect(appType)}
@@ -134,7 +155,7 @@ export const ImageWrapper: React.FC<ImageWrapperProps> = ({
   alt,
   height = 30,
   width = 30,
-  className = "",
+  className = ""
 }) => {
   return (
     <div

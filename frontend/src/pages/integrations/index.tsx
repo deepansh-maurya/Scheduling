@@ -34,9 +34,17 @@ const Integrations = () => {
                 {integrations.map((integration) => (
                   <IntegrationCard
                     key={integration.app_type}
+                    providerType={
+                      integration.app_type === "GOOGLE_MEET_AND_CALENDAR"
+                        ? "GOOGLE"
+                        : integration.app_type == "ZOOM"
+                          ? "ZOOM"
+                          : "MICROSOFT"
+                    }
                     isDisabled={
                       integration.app_type === "GOOGLE_MEET_AND_CALENDAR" ||
-                      integration.app_type == "MICROSOFT_TEAMS_AND_OUTLOOK"
+                      integration.app_type == "MICROSOFT_TEAMS_AND_OUTLOOK" ||
+                      integration.app_type == "ZOOM"
                         ? false
                         : true
                     }

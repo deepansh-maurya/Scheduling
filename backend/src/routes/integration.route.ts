@@ -6,7 +6,9 @@ import {
   dissconnectAppController,
   getUserIntegrationsController,
   googleOAuthCallbackController,
-  microfostOauthCallbackController
+  microfostOauthCallbackController,
+  zoomOAuthCallbackController,
+  zoomOAuthController
 } from "../controllers/integration.controller";
 
 const integrationRoutes = Router();
@@ -35,8 +37,15 @@ integrationRoutes.delete(
   dissconnectAppController
 );
 
+integrationRoutes.get(
+  "/zoom/connect",
+  passportAuthenticateJwt,
+  zoomOAuthController
+);
 integrationRoutes.get("/google/callback", googleOAuthCallbackController);
 
 integrationRoutes.get("/microsoft/callback", microfostOauthCallbackController);
+
+integrationRoutes.get("/zoom/callback", zoomOAuthCallbackController);
 
 export default integrationRoutes;

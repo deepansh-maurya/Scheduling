@@ -6,9 +6,18 @@ import {
   IntegrationProviderEnum
 } from "../database/entities/integration.entity";
 import { BadRequestException } from "../utils/app-error";
-import { googleOAuth2Client, microsoftClient } from "../config/oauth.config";
+import {
+  googleOAuth2Client,
+  microsoftClient,
+  msalConfig
+} from "../config/oauth.config";
 import { encodeState } from "../utils/helper";
 import { User } from "../database/entities/user.entity";
+import { ConfidentialClientApplication } from "@azure/msal-node";
+import {
+  Event,
+  EventLocationEnumType
+} from "../database/entities/event.entity";
 
 const appTypeToProviderMap: Record<
   IntegrationAppTypeEnum,
@@ -17,7 +26,8 @@ const appTypeToProviderMap: Record<
   [IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR]:
     IntegrationProviderEnum.GOOGLE,
   [IntegrationAppTypeEnum.MICROSOFT_TEAMS_AND_OUTLOOK]:
-    IntegrationProviderEnum.MICROSOFT
+    IntegrationProviderEnum.MICROSOFT,
+  [IntegrationAppTypeEnum.ZOOM]: IntegrationProviderEnum.ZOOM
 };
 
 const appTypeToCategoryMap: Record<
@@ -27,13 +37,15 @@ const appTypeToCategoryMap: Record<
   [IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR]:
     IntegrationCategoryEnum.CALENDAR_AND_VIDEO_CONFERENCING,
   [IntegrationAppTypeEnum.MICROSOFT_TEAMS_AND_OUTLOOK]:
-    IntegrationCategoryEnum.CALENDAR_AND_VIDEO_CONFERENCING
+    IntegrationCategoryEnum.CALENDAR_AND_VIDEO_CONFERENCING,
+  [IntegrationAppTypeEnum.ZOOM]: IntegrationCategoryEnum.ZOOM
 };
 
 const appTypeToTitleMap: Record<IntegrationAppTypeEnum, string> = {
   [IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR]: "Google Meet & Calendar",
   [IntegrationAppTypeEnum.MICROSOFT_TEAMS_AND_OUTLOOK]:
-    "Microsoft Teams & Outlook"
+    "Microsoft Teams & Outlook",
+  [IntegrationAppTypeEnum.ZOOM]: IntegrationProviderEnum.ZOOM
 };
 
 export const getUserIntegrationsService = async (userId: string) => {
@@ -82,7 +94,7 @@ export const connectAppService = async (
   appType: IntegrationAppTypeEnum
 ) => {
   const state = encodeState({ userId, appType });
-
+  console.log(appType == IntegrationAppTypeEnum.ZOOM);
   let authUrl: string;
 
   switch (appType) {
@@ -108,6 +120,15 @@ export const connectAppService = async (
         state
       });
       break;
+    case IntegrationAppTypeEnum.ZOOM: {
+      authUrl =
+        `https://zoom.us/oauth/authorize` +
+        `?response_type=code` +
+        `&client_id=${process.env.ZOOM_CLIENT_ID}` +
+        `&redirect_uri=${encodeURIComponent(process.env.ZOOM_REDIRECT_URI!)}` +
+        `&state=${encodeURIComponent(state)}`;
+      break;
+    }
     default:
       throw new BadRequestException("Unsupported app type");
   }
@@ -120,8 +141,25 @@ export const dissconencteService = async (
   appType: IntegrationProviderEnum
 ) => {
   const UserIntegrationsRepo = AppDataSource.getRepository(Integration);
+  const eventRepository = AppDataSource.getRepository(Event);
+
+  const event = await eventRepository.findOne({
+    where: {
+      user: { id: userId },
+      locationType:
+        appType == "GOOGLE"
+          ? EventLocationEnumType.GOOGLE_MEET_AND_CALENDAR
+          : EventLocationEnumType.MICROSOFT_TEAMS_AND_OUTLOOK
+    }
+  });
+
+  if (event) {
+    event.isPrivate = !event.isPrivate;
+    await eventRepository.save(event);
+  }
+
   const integration = await UserIntegrationsRepo.findOne({
-    where: { userId: userId, provider: IntegrationProviderEnum.GOOGLE }
+    where: { userId: userId, provider: appType }
   });
 
   if (!integration) {
@@ -134,9 +172,30 @@ export const dissconencteService = async (
         userId,
         provider: IntegrationProviderEnum.GOOGLE
       });
+
       return {
         success: true,
         message: "Google integration disconnected successfully"
+      };
+    }
+    case IntegrationProviderEnum.MICROSOFT: {
+      await UserIntegrationsRepo.delete({
+        userId,
+        provider: IntegrationProviderEnum.MICROSOFT
+      });
+      return {
+        success: true,
+        message: "Microsoft integration disconnected successfully"
+      };
+    }
+    case IntegrationProviderEnum.ZOOM: {
+      await UserIntegrationsRepo.delete({
+        userId,
+        provider: IntegrationProviderEnum.ZOOM
+      });
+      return {
+        success: true,
+        message: "Microsoft integration disconnected successfully"
       };
     }
     default:
@@ -199,4 +258,45 @@ export const validateGoogleToken = async (
   }
 
   return accessToken;
+};
+
+export const getMicrosoftAccessToken = async (integration: Integration) => {
+  const client = new ConfidentialClientApplication(msalConfig);
+  const integrationMetadata = integration.metadata as any;
+  const cacheData = integrationMetadata?.cacheData;
+
+  if (!cacheData) {
+    throw new Error("Microsoft token cache not found. Reconnect Microsoft.");
+  }
+
+  client.getTokenCache().deserialize(cacheData);
+
+  const homeAccountId = integrationMetadata?.homeAccountId;
+
+  if (!homeAccountId) {
+    throw new Error(
+      "Microsoft account information not found. Reconnect Microsoft."
+    );
+  }
+
+  const account = await client
+    .getTokenCache()
+    .getAccountByHomeId(homeAccountId);
+
+  if (!account) {
+    throw new Error(
+      "Microsoft account not found in token cache. Reconnect Microsoft."
+    );
+  }
+
+  const tokenResponse = await client.acquireTokenSilent({
+    account,
+    scopes: ["User.Read", "Calendars.ReadWrite"]
+  });
+
+  if (!tokenResponse?.accessToken) {
+    throw new Error("Could not acquire Microsoft access token");
+  }
+
+  return tokenResponse.accessToken;
 };

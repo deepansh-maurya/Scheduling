@@ -11,13 +11,16 @@ import {
 import { asyncHandlerAndValidation } from "../middlewares/withValidation.middleware";
 import { AppTypeDTO, ProviderDTO } from "../database/dto/integration.dto";
 import { config } from "../config/app.config";
-import { decodeState } from "../utils/helper";
+import { decodeState, encodeState } from "../utils/helper";
 import { googleOAuth2Client, microsoftClient } from "../config/oauth.config";
 import {
+  Integration,
   IntegrationAppTypeEnum,
   IntegrationCategoryEnum,
   IntegrationProviderEnum
 } from "../database/entities/integration.entity";
+import axios from "axios";
+import { AppDataSource } from "../config/database.config";
 
 const CLIENT_APP_URL = config.FRONTEND_INTEGRATION_URL;
 
@@ -132,17 +135,14 @@ export const microfostOauthCallbackController = asyncHandler(
 
     const CLIENT_URL = `${CLIENT_APP_URL}?app_type=microsoft`;
 
-    // Validate authorization code
     if (!code || typeof code !== "string") {
       return res.redirect(`${CLIENT_URL}&error=Invalid authorization`);
     }
 
-    // Validate state
     if (!state || typeof state !== "string") {
       return res.redirect(`${CLIENT_URL}&error=Invalid state parameter`);
     }
 
-    // Get Meetly user ID from OAuth state
     const { userId } = decodeState(state);
 
     if (!userId) {
@@ -165,6 +165,8 @@ export const microfostOauthCallbackController = asyncHandler(
         redirectUri: process.env.MICROSOFT_REDIRECT_URI!
       });
 
+      const cacheData = microsoftClient.getTokenCache().serialize();
+
       console.log(tokenResponse);
 
       if (!tokenResponse?.accessToken) {
@@ -185,7 +187,8 @@ export const microfostOauthCallbackController = asyncHandler(
           scope: tokenResponse.scopes?.join(" ") || "",
           token_type: "Bearer",
           homeAccountId: tokenResponse.account?.homeAccountId,
-          username: tokenResponse.account?.username
+          username: tokenResponse.account?.username,
+          cacheData
         }
       });
 
@@ -196,6 +199,113 @@ export const microfostOauthCallbackController = asyncHandler(
       return res.redirect(
         `${CLIENT_URL}&error=Failed to connect Microsoft account`
       );
+    }
+  }
+);
+
+export const zoomOAuthController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        message: "Unauthorized"
+      });
+    }
+
+    const state = encodeState({ userId });
+
+    const authUrl =
+      `https://zoom.us/oauth/authorize` +
+      `?response_type=code` +
+      `&client_id=${process.env.ZOOM_CLIENT_ID}` +
+      `&redirect_uri=${encodeURIComponent(process.env.ZOOM_REDIRECT_URI!)}` +
+      `&state=${encodeURIComponent(state)}`;
+
+    return res.redirect(authUrl);
+  }
+);
+
+export const zoomOAuthCallbackController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { code, state } = req.query;
+
+    const CLIENT_URL = `${CLIENT_APP_URL}?app_type=zoom`;
+
+    if (!code || typeof code !== "string") {
+      return res.redirect(`${CLIENT_URL}&error=Invalid authorization`);
+    }
+
+    if (!state || typeof state !== "string") {
+      return res.redirect(`${CLIENT_URL}&error=Invalid state parameter`);
+    }
+
+    const { userId } = decodeState(state);
+
+    if (!userId) {
+      return res.redirect(`${CLIENT_URL}&error=UserId is required`);
+    }
+
+    try {
+      const clientId = process.env.ZOOM_CLIENT_ID!;
+      const clientSecret = process.env.ZOOM_CLIENT_SECRET!;
+      const redirectUri = process.env.ZOOM_REDIRECT_URI!;
+
+      const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString(
+        "base64"
+      );
+
+      const tokenResponse = await axios.post(
+        "https://zoom.us/oauth/token",
+        new URLSearchParams({
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: redirectUri
+        }).toString(),
+        {
+          headers: {
+            Authorization: `Basic ${credentials}`,
+            "Content-Type": "application/x-www-form-urlencoded"
+          }
+        }
+      );
+
+      const {
+        access_token,
+        refresh_token,
+        expires_in,
+        scope,
+        token_type,
+        api_url
+      } = tokenResponse.data;
+
+      if (!access_token) {
+        return res.redirect(`${CLIENT_URL}&error=Access Token not received`);
+      }
+
+      await createIntegrationService({
+        userId,
+        provider: IntegrationProviderEnum.ZOOM,
+        category: IntegrationCategoryEnum.VIDEO_CONFERENCING,
+        app_type: IntegrationAppTypeEnum.ZOOM,
+        access_token,
+        refresh_token,
+        expiry_date: expires_in ? Date.now() + expires_in * 1000 : null,
+        metadata: {
+          scope: scope || "",
+          token_type: token_type || "Bearer",
+          api_url: api_url || "https://api.zoom.us"
+        }
+      });
+
+      return res.redirect(`${CLIENT_URL}&success=true`);
+    } catch (error: any) {
+      console.error(
+        "Zoom OAuth callback error:",
+        error?.response?.data || error
+      );
+
+      return res.redirect(`${CLIENT_URL}&error=Failed to connect Zoom account`);
     }
   }
 );

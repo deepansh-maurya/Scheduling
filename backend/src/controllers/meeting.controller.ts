@@ -57,8 +57,12 @@ export const createMeetBookingForGuestController = asyncHandlerAndValidation(
   CreateMeetingDto,
   "body",
   async (req: Request, res: Response, createMeetingDto) => {
-    const { meetLink, meeting } =
-      await createMeetBookingForGuestService(createMeetingDto);
+    const userId = req.user?.id as string;
+
+    const { meetLink, meeting } = await createMeetBookingForGuestService(
+      createMeetingDto,
+      userId
+    );
     return res.status(HTTPSTATUS.CREATED).json({
       message: "Meeting scheduled successfully",
       data: {

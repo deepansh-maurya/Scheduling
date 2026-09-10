@@ -13,7 +13,8 @@ import { Meeting } from "./meeting.entity";
 
 export enum EventLocationEnumType {
   GOOGLE_MEET_AND_CALENDAR = IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR,
-  MICROSOFT_TEAMS_AND_OUTLOOK = IntegrationAppTypeEnum.MICROSOFT_TEAMS_AND_OUTLOOK
+  MICROSOFT_TEAMS_AND_OUTLOOK = IntegrationAppTypeEnum.MICROSOFT_TEAMS_AND_OUTLOOK,
+  ZOOM = IntegrationAppTypeEnum.ZOOM
 }
 
 @Entity({ name: "events" })
@@ -24,7 +25,7 @@ export class Event {
   @Column({ nullable: false })
   title: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true }) 
   description: string;
 
   @Column({ default: 30 })

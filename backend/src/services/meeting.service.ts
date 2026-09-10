@@ -21,7 +21,10 @@ import {
   IntegrationProviderEnum
 } from "../database/entities/integration.entity";
 import { BadRequestException, NotFoundException } from "../utils/app-error";
-import { validateGoogleToken } from "./integration.service";
+import {
+  getMicrosoftAccessToken,
+  validateGoogleToken
+} from "./integration.service";
 import { googleOAuth2Client } from "../config/oauth.config";
 import { google } from "googleapis";
 import { User } from "../database/entities/user.entity";
@@ -330,7 +333,8 @@ export const getOutlookMeetingsFromProviderAndSave = async (userId: string) => {
 };
 
 export const createMeetBookingForGuestService = async (
-  createMeetingDto: CreateMeetingDto
+  createMeetingDto: CreateMeetingDto,
+  userId: string
 ) => {
   const { eventId, guestEmail, guestName, additionalInfo } = createMeetingDto;
   const startTime = new Date(createMeetingDto.startTime);
@@ -372,7 +376,7 @@ export const createMeetBookingForGuestService = async (
       meetIntegration.refresh_token,
       meetIntegration.expiry_date
     );
-    const response = await calendar.events.insert({
+    const response = await calendar?.events.insert({
       calendarId: "primary",
       conferenceDataVersion: 1,
       requestBody: {
@@ -389,9 +393,146 @@ export const createMeetBookingForGuestService = async (
       }
     });
 
-    meetLink = response.data.hangoutLink!;
-    calendarEventId = response.data.id!;
+    meetLink = response?.data.hangoutLink!;
+    calendarEventId = response?.data.id!;
     calendarAppType = calendarType;
+  } else if (
+    event.locationType === EventLocationEnumType.MICROSOFT_TEAMS_AND_OUTLOOK
+  ) {
+    const { accessToken, calendarType } = await getCalendarClient(
+      meetIntegration.app_type,
+      meetIntegration.access_token,
+      meetIntegration.refresh_token!,
+      meetIntegration.expiry_date,
+      userId
+    );
+
+    const response = await axios.post(
+      "https://graph.microsoft.com/v1.0/me/events",
+      {
+        subject: `${guestName} - ${event.title}`,
+
+        body: {
+          contentType: "Text",
+          content: additionalInfo || ""
+        },
+
+        start: {
+          dateTime: startTime.toISOString(),
+          timeZone: "UTC"
+        },
+
+        end: {
+          dateTime: endTime.toISOString(),
+          timeZone: "UTC"
+        },
+
+        attendees: [
+          {
+            emailAddress: {
+              address: guestEmail,
+              name: guestName
+            },
+            type: "required"
+          },
+          {
+            emailAddress: {
+              address: event.user.email,
+              name: event.user.name
+            },
+            type: "required"
+          }
+        ],
+
+        isOnlineMeeting: true,
+
+        onlineMeetingProvider: "teamsForBusiness"
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    meetLink = response.data.onlineMeeting?.joinUrl || null;
+    calendarEventId = response.data.id || "";
+    calendarAppType = calendarType;
+  } else if (event.locationType === EventLocationEnumType.ZOOM) {
+    let accessToken = meetIntegration.access_token;
+
+    if (
+      meetIntegration.expiry_date &&
+      Date.now() >= Number(meetIntegration.expiry_date) - 60_000
+    ) {
+      if (!meetIntegration.refresh_token) {
+        throw new BadRequestException(
+          "Zoom refresh token not available. Please reconnect Zoom."
+        );
+      }
+
+      const credentials = Buffer.from(
+        `${process.env.ZOOM_CLIENT_ID}:${process.env.ZOOM_CLIENT_SECRET}`
+      ).toString("base64");
+
+      const refreshResponse = await axios.post(
+        "https://zoom.us/oauth/token",
+        new URLSearchParams({
+          grant_type: "refresh_token",
+          refresh_token: meetIntegration.refresh_token
+        }).toString(),
+        {
+          headers: {
+            Authorization: `Basic ${credentials}`,
+            "Content-Type": "application/x-www-form-urlencoded"
+          }
+        }
+      );
+
+      accessToken = refreshResponse.data.access_token;
+
+      meetIntegration.access_token = refreshResponse.data.access_token;
+
+      if (refreshResponse.data.refresh_token) {
+        meetIntegration.refresh_token = refreshResponse.data.refresh_token;
+      }
+
+      if (refreshResponse.data.expires_in) {
+        meetIntegration.expiry_date =
+          Date.now() + refreshResponse.data.expires_in * 1000;
+      }
+
+      await integrationRepository.save(meetIntegration);
+    }
+
+    const duration = Math.ceil(
+      (endTime.getTime() - startTime.getTime()) / 60000
+    );
+
+    const response = await axios.post(
+      "https://api.zoom.us/v2/users/me/meetings",
+      {
+        topic: `${guestName} - ${event.title}`,
+        type: 2,
+        start_time: startTime.toISOString(),
+        duration,
+        agenda: additionalInfo || "",
+        settings: {
+          waiting_room: true
+        }
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    meetLink = response.data?.join_url || null;
+    calendarEventId = response.data?.id ? String(response.data.id) : "";
+    calendarAppType = IntegrationAppTypeEnum.ZOOM;
   }
 
   const meeting = meetingRepository.create({
@@ -458,7 +599,7 @@ export const cancelMeetingService = async (meetingId: string) => {
       );
       switch (calendarType) {
         case IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR:
-          await calendar.events.delete({
+          await calendar?.events.delete({
             calendarId: "primary",
             eventId: meeting.calendarEventId
           });
@@ -482,7 +623,8 @@ async function getCalendarClient(
   appType: IntegrationAppTypeEnum,
   access_token: string,
   refresh_token: string,
-  expiry_date: number | null
+  expiry_date: number | null,
+  userId?: string
 ) {
   switch (appType) {
     case IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR:
@@ -500,6 +642,28 @@ async function getCalendarClient(
         calendar,
         calendarType: IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR
       };
+
+    case IntegrationAppTypeEnum.MICROSOFT_TEAMS_AND_OUTLOOK: {
+      const integrationRepo = AppDataSource.getRepository(Integration);
+      const integration = await integrationRepo.findOne({
+        where: { userId: userId }
+      });
+
+      if (!integration) {
+        throw new BadRequestException(
+          "Microsoft Teams and Outlook integration not found"
+        );
+      }
+
+      const accessToken = await getMicrosoftAccessToken(integration);
+
+      return {
+        provider: "MICROSOFT" as const,
+        accessToken: accessToken,
+        calendarType: IntegrationAppTypeEnum.MICROSOFT_TEAMS_AND_OUTLOOK
+      };
+    }
+
     default:
       throw new BadRequestException(
         `Unsupported Calendar provider: ${appType}`

@@ -18,6 +18,7 @@ import {
 import { API, PublicAPI } from "./axios-client";
 import {
   IntegrationAppType,
+  IntegrationProviderType,
   MeetingType,
   VideoConferencingPlatform
 } from "./types";
@@ -69,6 +70,12 @@ export const connectAppIntegrationQueryFn = async (
   const response = await API.get(`integration/connect/${appType}`);
   return response.data;
 };
+
+export const dissconnectAppIntegrationQueryFn = async (
+  appType: IntegrationProviderType
+) => {
+  await API.delete(`integration/dissconnect/${appType}`);
+};  
 
 //*********** */ Availability APIS
 

@@ -18,6 +18,7 @@ export const protectedRoutePaths = [
   { path: PROTECTED_ROUTES.MEETINGS, element: <Meetings /> },
   { path: PROTECTED_ROUTES.AVAILBILITIY, element: <Availability /> },
   { path: PROTECTED_ROUTES.INTEGRATIONS, element: <Integrations /> },
+  { path: PROTECTED_ROUTES.RECORD, element: <Integrations /> },
 ];
 
 export const publicRoutePaths = [

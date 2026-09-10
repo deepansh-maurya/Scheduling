@@ -2,8 +2,12 @@ import { AppDataSource } from "../config/database.config";
 import { CreateEventDto, UserNameAndSlugDTO } from "../database/dto/event.dto";
 import {
   Event,
-  EventLocationEnumType,
+  EventLocationEnumType
 } from "../database/entities/event.entity";
+import {
+  Integration,
+  IntegrationProviderEnum
+} from "../database/entities/integration.entity";
 import { User } from "../database/entities/user.entity";
 import { BadRequestException, NotFoundException } from "../utils/app-error";
 import { slugify } from "../utils/helper";
@@ -23,9 +27,9 @@ export const createEventService = async (
   const slug = slugify(createEventDto.title);
 
   const event = eventRepository.create({
-    ...createEventDto,  
+    ...createEventDto,
     slug,
-    user: { id: userId },
+    user: { id: userId }
   });
 
   await eventRepository.save(event);
@@ -50,7 +54,7 @@ export const getUserEventsService = async (userId: string) => {
 
   return {
     events: user.events,
-    username: user.username,
+    username: user.username
   };
 };
 
@@ -59,13 +63,39 @@ export const toggleEventPrivacyService = async (
   eventId: string
 ) => {
   const eventRepository = AppDataSource.getRepository(Event);
+  const integrationRepo = AppDataSource.getRepository(Integration);
 
   const event = await eventRepository.findOne({
-    where: { id: eventId, user: { id: userId } },
+    where: { id: eventId, user: { id: userId } }
   });
 
   if (!event) {
     throw new NotFoundException("Event not found");
+  }
+
+  const locationType = event.locationType;
+  const integration = await integrationRepo.findOne({
+    where: {
+      userId: userId,
+      provider:
+        locationType == EventLocationEnumType.GOOGLE_MEET_AND_CALENDAR
+          ? IntegrationProviderEnum.GOOGLE
+          : locationType == EventLocationEnumType.MICROSOFT_TEAMS_AND_OUTLOOK
+            ? IntegrationProviderEnum.MICROSOFT
+            : IntegrationProviderEnum.ZOOM
+    }
+  });
+
+  if (!integration) {
+    throw new NotFoundException(
+      `Integrate ${
+        locationType == EventLocationEnumType.GOOGLE_MEET_AND_CALENDAR  
+          ? IntegrationProviderEnum.GOOGLE
+          : locationType == EventLocationEnumType.MICROSOFT_TEAMS_AND_OUTLOOK
+            ? IntegrationProviderEnum.MICROSOFT
+            : IntegrationProviderEnum.ZOOM
+      } first`
+    );
   }
 
   event.isPrivate = !event.isPrivate;
@@ -81,7 +111,7 @@ export const getPublicEventsByUsernameService = async (username: string) => {
   const user = await userRepository
     .createQueryBuilder("user")
     .leftJoinAndSelect("user.events", "event", "event.isPrivate = :isPrivate", {
-      isPrivate: false,
+      isPrivate: false
     })
     .where("user.username = :username", { username })
     .select(["user.id", "user.name", "user.imageUrl"])
@@ -91,7 +121,7 @@ export const getPublicEventsByUsernameService = async (username: string) => {
       "event.description",
       "event.slug",
       "event.duration",
-      "event.locationType",
+      "event.locationType"
     ])
     .orderBy("event.createdAt", "DESC")
     .getOne();
@@ -104,9 +134,9 @@ export const getPublicEventsByUsernameService = async (username: string) => {
     user: {
       name: user.name,
       username: username,
-      imageUrl: user.imageUrl,
+      imageUrl: user.imageUrl
     },
-    events: user.events,
+    events: user.events
   };
 };
 
@@ -128,7 +158,7 @@ export const getPublicEventByUsernameAndSlugService = async (
       "event.description",
       "event.slug",
       "event.duration",
-      "event.locationType",
+      "event.locationType"
     ])
     .addSelect(["user.id", "user.name", "user.imageUrl"])
     .getOne();
@@ -140,7 +170,7 @@ export const deleteEventService = async (userId: string, eventId: string) => {
   const eventRepository = AppDataSource.getRepository(Event);
 
   const event = await eventRepository.findOne({
-    where: { id: eventId, user: { id: userId } },
+    where: { id: eventId, user: { id: userId } }
   });
 
   if (!event) {
