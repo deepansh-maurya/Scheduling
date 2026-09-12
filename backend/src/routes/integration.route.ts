@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { passportAuthenticateJwt } from "../config/passport.config";
+import { httpAuthenticate } from "../config/auth.config";
 import {
   checkIntegrationController,
   connectAppController,
@@ -13,35 +13,17 @@ import {
 
 const integrationRoutes = Router();
 
-integrationRoutes.get(
-  "/all",
-  passportAuthenticateJwt,
-  getUserIntegrationsController
-);
+integrationRoutes.use(httpAuthenticate);
 
-integrationRoutes.get(
-  "/check/:appType",
-  passportAuthenticateJwt,
-  checkIntegrationController
-);
+integrationRoutes.get("/all", getUserIntegrationsController);
 
-integrationRoutes.get(
-  "/connect/:appType",
-  passportAuthenticateJwt,
-  connectAppController
-);
+integrationRoutes.get("/check/:appType", checkIntegrationController);
 
-integrationRoutes.delete(
-  "/dissconnect/:provider",
-  passportAuthenticateJwt,
-  dissconnectAppController
-);
+integrationRoutes.get("/connect/:appType", connectAppController);
 
-integrationRoutes.get(
-  "/zoom/connect",
-  passportAuthenticateJwt,
-  zoomOAuthController
-);
+integrationRoutes.delete("/dissconnect/:provider", dissconnectAppController);
+
+integrationRoutes.get("/zoom/connect", zoomOAuthController);
 integrationRoutes.get("/google/callback", googleOAuthCallbackController);
 
 integrationRoutes.get("/microsoft/callback", microfostOauthCallbackController);

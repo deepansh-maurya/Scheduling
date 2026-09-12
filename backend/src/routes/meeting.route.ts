@@ -5,23 +5,21 @@ import {
   getUserMeetingsController,
   syncMeetings
 } from "../controllers/meeting.controller";
-import { passportAuthenticateJwt } from "../config/passport.config";
+import { httpAuthenticate } from "../config/auth.config";
 
 const meetingRoutes = Router();
 
-meetingRoutes.get(
-  "/user/all/:meetingType",
-  passportAuthenticateJwt,
-  getUserMeetingsController
-);
+meetingRoutes.use(httpAuthenticate);
+
+meetingRoutes.get("/user/all/:meetingType", getUserMeetingsController);
 
 meetingRoutes.post("/public/create", createMeetBookingForGuestController);
 
-meetingRoutes.post("/sync", passportAuthenticateJwt, syncMeetings);
+meetingRoutes.post("/sync", syncMeetings);
 
 meetingRoutes.put(
   "/cancel/:meetingId",
-  passportAuthenticateJwt,
+
   cancelMeetingController
 );
 

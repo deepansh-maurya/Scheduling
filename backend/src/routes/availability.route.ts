@@ -1,21 +1,17 @@
 import { Router } from "express";
-import { passportAuthenticateJwt } from "../config/passport.config";
+import { httpAuthenticate } from "../config/auth.config"
 import {
   getAvailabilityForPublicEventController,
   getUserAvailabilityController,
-  updateAvailabilityController,
+  updateAvailabilityController
 } from "../controllers/availability.controller";
 
 const availabilityRoutes = Router();
 
-
-
-
-
+availabilityRoutes.use(httpAuthenticate);
 
 availabilityRoutes.get(
   "/me",
-  passportAuthenticateJwt,
   getUserAvailabilityController
 );
 
@@ -26,7 +22,6 @@ availabilityRoutes.get(
 
 availabilityRoutes.put(
   "/update",
-  passportAuthenticateJwt,
   updateAvailabilityController
 );
 export default availabilityRoutes;

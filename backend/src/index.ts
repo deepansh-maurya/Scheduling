@@ -1,5 +1,5 @@
 import "dotenv/config";
-import "./config/passport.config";
+import "./config/auth.config";
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import { config } from "./config/app.config";
@@ -13,6 +13,10 @@ import eventRoutes from "./routes/event.route";
 import availabilityRoutes from "./routes/availability.route";
 import integrationRoutes from "./routes/integration.route";
 import meetingRoutes from "./routes/meeting.route";
+import { createServer } from "http";
+import { wsLiveMeet } from "./config/socket.config";
+import { authenticateWebSocket } from "./config/auth.config";
+import { connectRedis } from "./config/redis.config";
 
 const app = express();
 const BASE_PATH = config.BASE_PATH;
@@ -26,7 +30,7 @@ app.use(passport.initialize());
 app.use(
   cors({
     origin: config.FRONTEND_ORIGIN,
-    credentials: true,
+    credentials: true
   })
 );
 
@@ -35,7 +39,7 @@ app.get(
   asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     // throw new BadRequestException("throwing async error");
     res.status(HTTPSTATUS.OK).json({
-      message: "i am healthy ",
+      message: "i am healthy "
     });
   })
 );
@@ -45,7 +49,7 @@ app.get(
   asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     // throw new BadRequestException("throwing async error");
     res.status(HTTPSTATUS.OK).json({
-      message: "i am running ",
+      message: "i am running "
     });
   })
 );
@@ -58,7 +62,32 @@ app.use(`${BASE_PATH}/meeting`, meetingRoutes);
 
 app.use(errorHandler);
 
-app.listen(config.PORT, async () => {
+const server = createServer(app);
+
+server.on("upgrade", async (request, socket, head) => {
+  const { pathname, searchParams } = new URL(
+    request.url!,
+    `http://${request.headers.host}`
+  );
+
+  if (pathname.startsWith("/ws/live-meeting")) {
+    const user = await authenticateWebSocket(request);
+    const meetingId = searchParams.get("meetingId");
+
+    if (!user || !meetingId) {
+      socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+      socket.destroy();
+      return;
+    }
+
+    wsLiveMeet.handleUpgrade(request, socket, head, (ws) => {
+      wsLiveMeet.emit("connection", ws, request, user, meetingId);
+    });
+  }
+});
+
+server.listen(config.PORT, async () => {
   await initializeDatabase();
+  await connectRedis();
   console.log(`Server listening on port ${config.PORT} in ${config.NODE_ENV}`);
 });

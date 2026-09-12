@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, LogOutIcon } from "lucide-react";
+import { ChevronDown, LogOutIcon, Pencil } from "lucide-react";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Separator } from "./ui/separator";
@@ -26,6 +26,9 @@ const Header = () => {
             className={`-ml-5 cursor-pointer lg:hidden
                bg-white border transform rotate-180`}
           />
+          <h1 className="font-semibold text-2xl flex gap-2 items-center  ">
+            Meeting elaine  <Pencil className="h-4  cursor-pointer" />
+          </h1>
         </div>
         <Popover>
           <PopoverTrigger asChild>
@@ -42,14 +45,14 @@ const Header = () => {
             align="end"
             className="!w-[280px] !rounded-[6px] !p-[8px_0] bg-white border border-[#D4E114]"
             style={{
-              boxShadow: "0 1px 5px rgba(0, 74, 16, 0.15)",
+              boxShadow: "0 1px 5px rgba(0, 74, 16, 0.15)"
             }}
           >
             <div
               role="menu"
               style={{
                 maxHeight: "calc(100vh - 200px)",
-                overflowY: "auto",
+                overflowY: "auto"
               }}
             >
               <div className="!pb-2">

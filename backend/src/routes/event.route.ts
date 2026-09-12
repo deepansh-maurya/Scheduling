@@ -1,20 +1,21 @@
 import { Router } from "express";
-import { passportAuthenticateJwt } from "../config/passport.config";
 import {
   createEventController,
   deleteEventController,
   getPublicEventByUsernameAndSlugController,
   getPublicEventsByUsernameController,
   getUserEventsController,
-  toggleEventPrivacyController,
+  toggleEventPrivacyController
 } from "../controllers/event.controller";
+import { httpAuthenticate } from "../config/auth.config";
 
 const eventRoutes = Router();
 
-eventRoutes.post("/create", passportAuthenticateJwt, createEventController);
-eventRoutes.get("/all", passportAuthenticateJwt, getUserEventsController);
+eventRoutes.use(httpAuthenticate);
 
-// for public without token
+eventRoutes.post("/create", createEventController);
+eventRoutes.get("/all", getUserEventsController);
+
 eventRoutes.get("/public/:username", getPublicEventsByUsernameController);
 
 eventRoutes.get(
@@ -22,11 +23,7 @@ eventRoutes.get(
   getPublicEventByUsernameAndSlugController
 );
 
-eventRoutes.put(
-  "/toggle-privacy",
-  passportAuthenticateJwt,
-  toggleEventPrivacyController
-);
+eventRoutes.put("/toggle-privacy", toggleEventPrivacyController);
 
-eventRoutes.delete("/:eventId", passportAuthenticateJwt, deleteEventController);
+eventRoutes.delete("/:eventId", deleteEventController);
 export default eventRoutes;

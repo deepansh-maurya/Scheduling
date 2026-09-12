@@ -7,10 +7,11 @@ import Availability from "@/pages/availability";
 import Integrations from "@/pages/integrations";
 import UserEventsPage from "@/pages/external_page/user-events";
 import UserSingleEventPage from "@/pages/external_page/user-single-event";
+import Record from "@/pages/Record";
 
 export const authenticationRoutePaths = [
   { path: AUTH_ROUTES.SIGN_IN, element: <SignIn /> },
-  { path: AUTH_ROUTES.SIGN_UP, element: <SignUp /> },
+  { path: AUTH_ROUTES.SIGN_UP, element: <SignUp /> }
 ];
 
 export const protectedRoutePaths = [
@@ -18,10 +19,10 @@ export const protectedRoutePaths = [
   { path: PROTECTED_ROUTES.MEETINGS, element: <Meetings /> },
   { path: PROTECTED_ROUTES.AVAILBILITIY, element: <Availability /> },
   { path: PROTECTED_ROUTES.INTEGRATIONS, element: <Integrations /> },
-  { path: PROTECTED_ROUTES.RECORD, element: <Integrations /> },
+  { path: PROTECTED_ROUTES.RECORD, element: <Record /> }
 ];
 
 export const publicRoutePaths = [
   { path: PUBLIC_ROUTES.USER_EVENTS, element: <UserEventsPage /> },
-  { path: PUBLIC_ROUTES.USER_SINGLE_EVENT, element: <UserSingleEventPage /> },
+  { path: PUBLIC_ROUTES.USER_SINGLE_EVENT, element: <UserSingleEventPage /> }
 ];
