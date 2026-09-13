@@ -3,16 +3,19 @@ import {
   CreateDateColumn,
   Entity,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn
 } from "typeorm";
 import { User } from "./user.entity";
 import { Event } from "./event.entity";
 import { IntegrationAppTypeEnum } from "./integration.entity";
+import { TranscriptChunk } from "./transcript-chunk.entity";
 
 export enum MeetingStatus {
   SCHEDULED = "SCHEDULED",
-  CANCELLED = "CANCELLED"
+  CANCELLED = "CANCELLED",
+  COMPLETED = "COMPLETED"
 }
 
 interface MeetingAttendee {
@@ -24,6 +27,21 @@ interface MeetingAttendee {
 export enum MeetingType {
   EVENT_BOOKING = "EVENT_BOOKING",
   CALENDAR_EVENT = "CALENDAR_EVENT"
+}
+
+export  interface TranscriptSegment {
+  id: string;
+  text: string;
+  start: number;
+  end: number;
+  channel: number;
+}
+
+interface MeetingTranscript {
+  language: string;
+  duration: number;
+  channels: number;
+  segments: TranscriptSegment[];
 }
 
 @Entity({ name: "meetings" })
@@ -89,6 +107,15 @@ export class Meeting {
     default: MeetingStatus.SCHEDULED
   })
   status: MeetingStatus;
+
+  @Column({ type: "jsonb", nullable: true })
+  transcript: MeetingTranscript | null;
+
+  @OneToMany(
+    () => TranscriptChunk,
+    (transcriptChunk) => transcriptChunk.meetingId
+  )
+  transcriptChunks: TranscriptChunk[];
 
   @CreateDateColumn()
   createdAt: Date;

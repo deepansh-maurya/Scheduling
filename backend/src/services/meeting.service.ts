@@ -1,4 +1,5 @@
 import { LessThan, MoreThan } from "typeorm";
+import ollama from "ollama";
 import { AppDataSource } from "../config/database.config";
 import {
   Meeting,
@@ -29,6 +30,8 @@ import { googleOAuth2Client } from "../config/oauth.config";
 import { google } from "googleapis";
 import { User } from "../database/entities/user.entity";
 import axios from "axios";
+import { redisClient } from "../config/redis.config";
+import { TranscriptChunk } from "../database/entities/transcript-chunk.entity";
 
 export const getUserMeetingsService = async (
   userId: string,
@@ -670,3 +673,115 @@ async function getCalendarClient(
       );
   }
 }
+
+export const createEmbeddingsAndSave = async (
+  meetingId: string,
+  userId: string
+) => {
+  try {
+    const chunk = await createRawTranscript(
+      `transcript:${userId}:${meetingId}`
+    );
+
+    const saveFormat = chunk.map((c, i) => {
+      return {
+        id: String(i),
+        start: Number(c.start),
+        end: Number(c.end),
+        channel: c.channelNunmber,
+        text: c.transcript
+      };
+    });
+
+    const meetRepo = AppDataSource.getRepository(Meeting);
+
+    await meetRepo.update(
+      { id: meetingId },
+      {
+        status: MeetingStatus.COMPLETED,
+        transcript: {
+          language: "en",
+          duration: Number(chunk[chunk.length - 1].end),
+          channels: 2,
+          segments: saveFormat
+        }
+      }
+    );
+
+    for (
+      let i = 0;
+      i <= chunk.length;
+      i = chunk[chunk.length + 60] ? i + 60 : chunk.length - i
+    ) {
+      const initIndex = i != 0 ? i - 20 : 0;
+      const finalIndex =
+        i != 0 && chunk[chunk.length + 60] ? i - 20 : i == 0 ? 0 : i;
+
+      const rawChunkPiece = chunk
+        .slice(initIndex, finalIndex)
+        .map((c) => `${c.timstamp} [${c.channelString}] ${c.transcript}`)
+        .join("\n");
+
+      const response = await ollama.embed({
+        model: "nomic-embed-text",
+        input: rawChunkPiece
+      });
+
+      const embedding = response.embeddings[0];
+
+      const chunkRepo = AppDataSource.getRepository(TranscriptChunk);
+
+      chunkRepo.create({
+        meeting: { id: meetingId },
+        startTime: Number(chunk[i].start),
+        endTime: Number(chunk[i].end),
+        channel: chunk[i].channelNunmber,
+        content: rawChunkPiece,
+        embedding: embedding
+      });
+    }
+
+    await redisClient.del(`transcript:${userId}:${meetingId}`);
+
+    // if fails then publish event to try again saving
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const formatTimestamp = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+
+  return `${String(minutes).padStart(2, "0")}:${String(
+    remainingSeconds
+  ).padStart(2, "0")}`;
+};
+
+const getChannelLabel = (channel: number) => {
+  if (channel === 0) return "User";
+  if (channel === 1) return "SYSTEM";
+
+  return `CHANNEL ${channel}`;
+};
+
+const createRawTranscript = async (key: string) => {
+  const segments = await redisClient.lRange(key, 0, -1);
+
+  return segments.map((segment, index) => {
+    const data = JSON.parse(segment);
+
+    const timestamp = formatTimestamp(data.start);
+    const channel = getChannelLabel(data.channel);
+
+    return {
+      timstamp: timestamp,
+      start: timestamp,
+      end: formatTimestamp(data.end),
+      channelString: channel,
+      channelNunmber: channel.includes("User") ? 0 : 1,
+      transcript: data.transcript,
+      continousManner: index
+    };
+  });
+};

@@ -17,6 +17,9 @@ import { createServer } from "http";
 import { wsLiveMeet } from "./config/socket.config";
 import { authenticateWebSocket } from "./config/auth.config";
 import { connectRedis } from "./config/redis.config";
+import { AppDataSource } from "./config/database.config";
+import { Meeting } from "./database/entities/meeting.entity";
+import "./modules/Meeting/live/live-meeting.socket";
 
 const app = express();
 const BASE_PATH = config.BASE_PATH;
@@ -37,7 +40,6 @@ app.use(
 app.get(
   "/health",
   asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    // throw new BadRequestException("throwing async error");
     res.status(HTTPSTATUS.OK).json({
       message: "i am healthy "
     });
@@ -47,7 +49,6 @@ app.get(
 app.get(
   "/running",
   asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    // throw new BadRequestException("throwing async error");
     res.status(HTTPSTATUS.OK).json({
       message: "i am running "
     });
@@ -71,11 +72,42 @@ server.on("upgrade", async (request, socket, head) => {
   );
 
   if (pathname.startsWith("/ws/live-meeting")) {
-    const user = await authenticateWebSocket(request);
+    const token = searchParams.get("token");
+
+    if (!token) {
+      socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+      socket.destroy();
+      return;
+    }
+
+    const user = await authenticateWebSocket(token);
     const meetingId = searchParams.get("meetingId");
+
+    console.log("reached");
 
     if (!user || !meetingId) {
       socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+      socket.destroy();
+      return;
+    }
+
+    console.log("verified");
+
+    const meetingRepo = AppDataSource.getRepository(Meeting);
+    const isMeetingAvail = await meetingRepo.findOne({
+      where: { id: meetingId }
+    });
+
+    if (isMeetingAvail?.status != "SCHEDULED") {
+      socket.write(
+        "HTTP/1.1 403 Forbidden\r\n" +
+          "Content-Type: application/json\r\n" +
+          "\r\n" +
+          JSON.stringify({
+            message: "Meeting is not available for live transcription"
+          })
+      );
+
       socket.destroy();
       return;
     }

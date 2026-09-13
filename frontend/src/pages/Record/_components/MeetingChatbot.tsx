@@ -1,7 +1,7 @@
 import { ArrowUp, Maximize2, Mic, Paperclip, Sparkles, X } from "lucide-react";
 import { useState } from "react";
 
-const MeetingChatbot = () => {
+const MeetingChatbot = ({ onClose }: { onClose: () => void }) => {
   const [width, setWidth] = useState(420);
   const [height, setHeight] = useState(430);
 
@@ -68,7 +68,6 @@ const MeetingChatbot = () => {
         shadow-2xl
       "
     >
-      {/* LEFT RESIZE HANDLE */}
       <div
         onPointerDown={startResizeLeft}
         className="
@@ -82,7 +81,6 @@ const MeetingChatbot = () => {
         "
       />
 
-      {/* TOP RESIZE HANDLE */}
       <div
         onPointerDown={startResizeHeight}
         className="
@@ -96,7 +94,6 @@ const MeetingChatbot = () => {
         "
       />
 
-      {/* HEADER */}
       <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-4 py-3">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black text-white">
@@ -119,13 +116,15 @@ const MeetingChatbot = () => {
             <Maximize2 size={16} />
           </button>
 
-          <button className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700">
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+          >
             <X size={17} />
           </button>
         </div>
       </div>
 
-      {/* CONTEXT */}
       <div className="shrink-0 border-b border-gray-100 bg-gray-50 px-4 py-2">
         <div className="flex items-center gap-2 text-[11px] text-gray-500">
           <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
@@ -133,10 +132,8 @@ const MeetingChatbot = () => {
         </div>
       </div>
 
-      {/* CHAT AREA */}
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         <div className="flex flex-col gap-4">
-          {/* AI MESSAGE */}
           <div className="max-w-[85%]">
             <p className="mb-1 text-[11px] font-medium text-gray-400">
               Assistant
@@ -148,14 +145,12 @@ const MeetingChatbot = () => {
             </div>
           </div>
 
-          {/* USER MESSAGE */}
           <div className="ml-auto max-w-[80%]">
             <div className="rounded-xl bg-blue-50 px-3 py-2.5 text-sm leading-5 text-gray-700">
               What were the main decisions?
             </div>
           </div>
 
-          {/* AI MESSAGE */}
           <div className="max-w-[85%]">
             <p className="mb-1 text-[11px] font-medium text-gray-400">
               Assistant
@@ -170,7 +165,6 @@ const MeetingChatbot = () => {
         </div>
       </div>
 
-      {/* SUGGESTIONS */}
       <div className="shrink-0 overflow-x-auto border-t border-gray-100 px-3 py-2">
         <div className="flex gap-2">
           <button className="shrink-0 rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50">
@@ -187,7 +181,6 @@ const MeetingChatbot = () => {
         </div>
       </div>
 
-      {/* INPUT */}
       <div className="shrink-0 p-3">
         <div className="rounded-xl border border-gray-200 bg-white">
           <textarea
@@ -224,7 +217,6 @@ const MeetingChatbot = () => {
         </div>
       </div>
 
-      {/* CORNER RESIZE */}
       <div
         onPointerDown={(e) => {
           e.preventDefault();

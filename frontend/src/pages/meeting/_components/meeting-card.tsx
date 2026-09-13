@@ -7,6 +7,9 @@ import { locationOptions } from "@/lib/types";
 import { PeriodEnum } from "@/hooks/use-meeting-filter";
 import { Loader } from "@/components/loader";
 import { cn } from "@/lib/utils";
+import { Socket } from "@/lib/socket";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const MeetingCard = (props: {
   meeting: MeetingType;
@@ -18,8 +21,7 @@ const MeetingCard = (props: {
 
   const [isShow, setIsShow] = useState(false);
   const detailsRef = useRef<HTMLDivElement>(null);
-
-  // Format the date and time
+  const nav = useNavigate();
   const startTime = parseISO(meeting.startTime);
   const endTime = parseISO(meeting.endTime);
   const formattedDate = format(startTime, "EEEE, d MMMM yyyy"); // e.g., "Wednesday, 19 March 2025"
@@ -35,6 +37,7 @@ const MeetingCard = (props: {
   const toggleDetails = () => {
     setIsShow(!isShow);
   };
+
   return (
     <div className="w-full">
       <h2
@@ -44,8 +47,6 @@ const MeetingCard = (props: {
         {formattedDate}
       </h2>
 
-      {/* {Event body} */}
-      {/* {Event body} */}
       <div role="buton" className="event-list-body" onClick={toggleDetails}>
         <div
           className="flex flex-row bg-white relative w-full p-6 text-left 
@@ -74,7 +75,6 @@ const MeetingCard = (props: {
               Event type <strong> {meeting?.event?.title}</strong>
             </p>
           </div>
-          {/* {Meeting detail Button} */}
           <div className="flex shrink-0">
             <button className="flex gap-px items-center cursor-pointer !text-[rgba(26,26,26,0.61)] text-base leading-[1.4] whitespace-nowrap">
               <ChevronDown
@@ -87,10 +87,6 @@ const MeetingCard = (props: {
           </div>
         </div>
       </div>
-
-      {/* {Event Details} */}
-      {/* {Event Details} */}
-      {/* {Event Details} */}
       <div
         ref={detailsRef}
         className="event-details overflow-hidden transition-all duration-300 ease-in-out"
@@ -169,6 +165,14 @@ const MeetingCard = (props: {
                       variant="outline"
                       type="button"
                       className="!w-full border-[#476788] text-[#0a2540] font-normal text-sm"
+                      onClick={async () => {
+                        try {
+                          await Socket.conenctMeeting(meeting.id);
+                          nav(`/app/meeting/${meeting.id}`);
+                        } catch {
+                          toast.error("Failed to start Meeting");
+                        }
+                      }}
                     >
                       {isPending ? (
                         <Loader color="black" />

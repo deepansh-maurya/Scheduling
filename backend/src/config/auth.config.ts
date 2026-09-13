@@ -50,22 +50,18 @@ export const httpAuthenticate = async (
   }
 };
 
-export const authenticateWebSocket = async (request: IncomingMessage) => {
-  const authorization = request.headers.authorization;
-
-  if (!authorization?.startsWith("Bearer ")) {
-    return null;
-  }
-
-  const token = authorization.slice(7);
-
+export const authenticateWebSocket = async (token: string) => {
   try {
     const payload = jwt.verify(token, config.JWT_SECRET, {
       audience: "user",
       algorithms: ["HS256"]
     }) as JwtPayload;
 
+    console.log(payload);
+
     const user = await findByIdUserService(payload.userId);
+
+    console.log(user);
 
     if (!user) {
       return null;

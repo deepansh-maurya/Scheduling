@@ -13,17 +13,28 @@ import {
 
 const integrationRoutes = Router();
 
-integrationRoutes.use(httpAuthenticate);
+integrationRoutes.get("/all", httpAuthenticate, getUserIntegrationsController);
 
-integrationRoutes.get("/all", getUserIntegrationsController);
+integrationRoutes.get(
+  "/check/:appType",
+  httpAuthenticate,
+  checkIntegrationController
+);
 
-integrationRoutes.get("/check/:appType", checkIntegrationController);
+integrationRoutes.get(
+  "/connect/:appType",
+  httpAuthenticate,
+  connectAppController
+);
 
-integrationRoutes.get("/connect/:appType", connectAppController);
+integrationRoutes.delete(
+  "/dissconnect/:provider",
+  httpAuthenticate,
+  dissconnectAppController
+);
 
-integrationRoutes.delete("/dissconnect/:provider", dissconnectAppController);
+integrationRoutes.get("/zoom/connect", httpAuthenticate, zoomOAuthController);
 
-integrationRoutes.get("/zoom/connect", zoomOAuthController);
 integrationRoutes.get("/google/callback", googleOAuthCallbackController);
 
 integrationRoutes.get("/microsoft/callback", microfostOauthCallbackController);
