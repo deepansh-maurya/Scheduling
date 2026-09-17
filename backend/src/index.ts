@@ -18,7 +18,7 @@ import { wsLiveMeet } from "./config/socket.config";
 import { authenticateWebSocket } from "./config/auth.config";
 import { connectRedis } from "./config/redis.config";
 import { AppDataSource } from "./config/database.config";
-import { Meeting } from "./database/entities/meeting.entity";
+import { Meeting, MeetingStatus } from "./database/entities/meeting.entity";
 import "./modules/Meeting/live/live-meeting.socket";
 
 const app = express();
@@ -66,12 +66,12 @@ app.use(errorHandler);
 const server = createServer(app);
 
 server.on("upgrade", async (request, socket, head) => {
-  const { pathname, searchParams } = new URL(
-    request.url!,
-    `http://${request.headers.host}`
-  );
+  try {
+    const { pathname, searchParams } = new URL(
+      request.url!,
+      `http://${request.headers.host}`
+    );
 
-  if (pathname.startsWith("/ws/live-meeting")) {
     const token = searchParams.get("token");
 
     if (!token) {
@@ -112,9 +112,25 @@ server.on("upgrade", async (request, socket, head) => {
       return;
     }
 
-    wsLiveMeet.handleUpgrade(request, socket, head, (ws) => {
-      wsLiveMeet.emit("connection", ws, request, user, meetingId);
-    });
+    if (pathname.startsWith("/ws/live-meeting")) {
+      await meetingRepo.update(
+        { id: meetingId },
+        { status: MeetingStatus.IN_PROGRESS }
+      );
+
+      wsLiveMeet.handleUpgrade(request, socket, head, (ws) => {
+        wsLiveMeet.emit("connection", ws, request, user, meetingId);
+      });
+    }
+
+    if (pathname.startsWith("/ws/live-chatbot")) {
+      wsLiveMeet.handleUpgrade(request, socket, head, (ws) => {
+        wsLiveMeet.emit("connection", ws, request, user, meetingId);
+      });
+    }
+  } catch (error) {
+    socket.write("HTTP/1.1 500 something_went_wrong\r\n\r\n");
+    socket.destroy();
   }
 });
 

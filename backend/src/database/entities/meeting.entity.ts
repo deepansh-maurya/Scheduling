@@ -15,7 +15,9 @@ import { TranscriptChunk } from "./transcript-chunk.entity";
 export enum MeetingStatus {
   SCHEDULED = "SCHEDULED",
   CANCELLED = "CANCELLED",
-  COMPLETED = "COMPLETED"
+  COMPLETED = "COMPLETED",
+  IN_PROGRESS = "IN_PROGRESS",
+  SAVING = "SAVING"
 }
 
 interface MeetingAttendee {
@@ -29,7 +31,7 @@ export enum MeetingType {
   CALENDAR_EVENT = "CALENDAR_EVENT"
 }
 
-export  interface TranscriptSegment {
+export interface TranscriptSegment {
   id: string;
   text: string;
   start: number;

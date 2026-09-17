@@ -17,7 +17,7 @@ export class Socket {
       });
 
       socket.addEventListener("error", () => {
-        reject(socket);
+        reject(new Error("WebSocket connection failed"));
       });
     });
   }

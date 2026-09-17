@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Socket } from "@/lib/socket";
 import { toast } from "sonner";
 import getudioVideo from "@/lib/audio-video";
+import { useNavigate } from "react-router-dom";
 
 interface Transcript {
   channel: number;
@@ -24,15 +25,27 @@ const Record = () => {
   const [pause, setPause] = useState(false);
   const [transcript, setTranscript] = useState<Transcript[]>([]);
   const transcriptContainerRef = useRef<HTMLDivElement | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
+  const channelledAudioRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const nav = useNavigate();
 
   console.log(transcript);
   useEffect(() => {
-    // meetSetup();
+    meetSetup();
   }, []);
 
   const meetSetup = async () => {
     try {
-      const { channelledAudio, video } = await getudioVideo();
+      const { channelledAudio, video, micStream, screenStream, audioContext } =
+        await getudioVideo();
+
+      micStreamRef.current = micStream;
+      screenStreamRef.current = screenStream;
+      channelledAudioRef.current = channelledAudio;
+      audioContextRef.current = audioContext;
 
       if (videoRef.current) {
         videoRef.current.srcObject = video;
@@ -63,6 +76,38 @@ const Record = () => {
     }
   };
 
+  const stopMeeting = useCallback(() => {
+    if (recorderRef.current?.state !== "inactive") {
+      recorderRef.current?.stop();
+    }
+
+    micStreamRef.current?.getTracks().forEach((track) => {
+      track.stop();
+    });
+
+    screenStreamRef.current?.getTracks().forEach((track) => {
+      track.stop();
+    });
+
+    channelledAudioRef.current?.getTracks().forEach((track) => {
+      track.stop();
+    });
+
+    if (audioContextRef.current?.state !== "closed") {
+      audioContextRef.current?.close();
+    }
+
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.srcObject = null;
+    }
+
+    Socket.liveMeetCon?.close();
+    Socket.liveMeetCon = null;
+    toast.success("Meeting recorded successfully, saving in progress");
+    nav("/app/scheduled_events");
+  }, [nav]);
+
   useEffect(() => {
     const element = transcriptContainerRef.current;
 
@@ -82,10 +127,6 @@ const Record = () => {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, []);
-
-  const stopMeeting = useCallback(() => {
-    Socket.liveMeetCon?.close();
   }, []);
 
   return (

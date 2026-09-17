@@ -683,6 +683,8 @@ export const createEmbeddingsAndSave = async (
       `transcript:${userId}:${meetingId}`
     );
 
+    console.log(chunk);
+
     const saveFormat = chunk.map((c, i) => {
       return {
         id: String(i),
@@ -698,7 +700,7 @@ export const createEmbeddingsAndSave = async (
     await meetRepo.update(
       { id: meetingId },
       {
-        status: MeetingStatus.COMPLETED,
+        status: MeetingStatus.SAVING,
         transcript: {
           language: "en",
           duration: Number(chunk[chunk.length - 1].end),
@@ -708,19 +710,28 @@ export const createEmbeddingsAndSave = async (
       }
     );
 
-    for (
-      let i = 0;
-      i <= chunk.length;
-      i = chunk[chunk.length + 60] ? i + 60 : chunk.length - i
-    ) {
-      const initIndex = i != 0 ? i - 20 : 0;
-      const finalIndex =
-        i != 0 && chunk[chunk.length + 60] ? i - 20 : i == 0 ? 0 : i;
+    const chunkRepo = AppDataSource.getRepository(TranscriptChunk);
 
-      const rawChunkPiece = chunk
-        .slice(initIndex, finalIndex)
+    const entities: TranscriptChunk[] = [];
+
+    for (let i = 0; i < chunk.length; i += 60) {
+      const initIndex = i === 0 ? 0 : i - 20;
+
+      const finalIndex = Math.min(i + 60, chunk.length);
+
+      const chunkSegments = chunk.slice(initIndex, finalIndex);
+
+      console.log(initIndex, finalIndex, chunkSegments);
+
+      if (chunkSegments.length === 0) {
+        continue;
+      }
+
+      const rawChunkPiece = chunkSegments
         .map((c) => `${c.timstamp} [${c.channelString}] ${c.transcript}`)
         .join("\n");
+
+      console.log(rawChunkPiece);
 
       const response = await ollama.embed({
         model: "nomic-embed-text",
@@ -729,19 +740,28 @@ export const createEmbeddingsAndSave = async (
 
       const embedding = response.embeddings[0];
 
-      const chunkRepo = AppDataSource.getRepository(TranscriptChunk);
-
-      chunkRepo.create({
-        meeting: { id: meetingId },
-        startTime: Number(chunk[i].start),
-        endTime: Number(chunk[i].end),
-        channel: chunk[i].channelNunmber,
+      const entity = chunkRepo.create({
+        meeting: {
+          id: meetingId
+        },
+        startTime: Number(chunkSegments[0].start),
+        endTime: Number(chunkSegments[chunkSegments.length - 1].end),
+        channel: chunkSegments[0].channelNunmber,
         content: rawChunkPiece,
-        embedding: embedding
+        embedding
       });
+
+      entities.push(entity);
     }
 
-    await redisClient.del(`transcript:${userId}:${meetingId}`);
+    await chunkRepo.save(entities);
+
+    await meetRepo.update(
+      { id: meetingId },
+      { status: MeetingStatus.COMPLETED }
+    );
+
+    await redisClient.lTrim(`transcript:${userId}:${meetingId}`, 40, -1);
 
     // if fails then publish event to try again saving
   } catch (error) {
@@ -766,8 +786,7 @@ const getChannelLabel = (channel: number) => {
 };
 
 const createRawTranscript = async (key: string) => {
-  const segments = await redisClient.lRange(key, 0, -1);
-
+  const segments = await redisClient.lRange(key, 0, 59);
   return segments.map((segment, index) => {
     const data = JSON.parse(segment);
 
@@ -776,8 +795,8 @@ const createRawTranscript = async (key: string) => {
 
     return {
       timstamp: timestamp,
-      start: timestamp,
-      end: formatTimestamp(data.end),
+      start: data.start,
+      end: data.end,
       channelString: channel,
       channelNunmber: channel.includes("User") ? 0 : 1,
       transcript: data.transcript,

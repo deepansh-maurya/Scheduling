@@ -4,7 +4,7 @@ export const isAuthRoute = (pathname: string): boolean => {
 
 export const AUTH_ROUTES = {
   SIGN_IN: "/",
-  SIGN_UP: "/sign-up",
+  SIGN_UP: "/sign-up"
 };
 
 export const PROTECTED_ROUTES = {
@@ -13,9 +13,10 @@ export const PROTECTED_ROUTES = {
   AVAILBILITIY: "/app/availability/schedules",
   MEETINGS: "/app/scheduled_events",
   RECORD: "/app/meeting/:id",
+  END_PAGE: "/app/recording/:id"
 };
 
 export const PUBLIC_ROUTES = {
   USER_EVENTS: "/:username",
-  USER_SINGLE_EVENT: "/:username/:slug",
+  USER_SINGLE_EVENT: "/:username/:slug"
 };

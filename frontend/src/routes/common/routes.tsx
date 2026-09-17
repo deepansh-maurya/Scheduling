@@ -8,6 +8,7 @@ import Integrations from "@/pages/integrations";
 import UserEventsPage from "@/pages/external_page/user-events";
 import UserSingleEventPage from "@/pages/external_page/user-single-event";
 import Record from "@/pages/Record";
+import { MeetingEnd } from "@/pages/meeting_end_page";
 
 export const authenticationRoutePaths = [
   { path: AUTH_ROUTES.SIGN_IN, element: <SignIn /> },
@@ -19,7 +20,8 @@ export const protectedRoutePaths = [
   { path: PROTECTED_ROUTES.MEETINGS, element: <Meetings /> },
   { path: PROTECTED_ROUTES.AVAILBILITIY, element: <Availability /> },
   { path: PROTECTED_ROUTES.INTEGRATIONS, element: <Integrations /> },
-  { path: PROTECTED_ROUTES.RECORD, element: <Record /> }
+  { path: PROTECTED_ROUTES.RECORD, element: <Record /> },
+  { path: PROTECTED_ROUTES.END_PAGE, element: <MeetingEnd /> }
 ];
 
 export const publicRoutePaths = [

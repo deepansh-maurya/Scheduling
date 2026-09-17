@@ -23,7 +23,13 @@ async function getudioVideo() {
 
   merger.connect(destination);
 
-  return { video: screenStream, channelledAudio: destination.stream };
+  return {
+    video: screenStream,
+    channelledAudio: destination.stream,
+    micStream,
+    screenStream,
+    audioContext
+  };
 }
 
 export default getudioVideo;

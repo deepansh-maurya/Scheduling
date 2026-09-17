@@ -24,7 +24,7 @@ const MeetingCard = (props: {
   const nav = useNavigate();
   const startTime = parseISO(meeting.startTime);
   const endTime = parseISO(meeting.endTime);
-  const formattedDate = format(startTime, "EEEE, d MMMM yyyy"); // e.g., "Wednesday, 19 March 2025"
+  const formattedDate = format(startTime, "EEEE, d MMMM yyyy");
   const formattedTime = `${format(startTime, "h:mm a")} – ${format(
     endTime,
     "h:mm a"
