@@ -10,12 +10,12 @@ type SignOptsAndSecret = SignOptions & {
 };
 
 const defaults: SignOptions = {
-  audience: ["user"],
+  audience: ["user"]
 };
 
 const accessTokenSignOptions: SignOptsAndSecret = {
   expiresIn: "1d",
-  secret: config.JWT_SECRET,
+  secret: config.JWT_SECRET
 };
 
 export const signJwtToken = (
@@ -25,7 +25,7 @@ export const signJwtToken = (
   const { secret, ...opts } = options || accessTokenSignOptions;
   const token = jwt.sign(payload, secret, {
     ...defaults,
-    ...opts,
+    ...opts
   });
 
   const decodedToken = jwt.decode(token) as JwtPayload | null;
@@ -33,6 +33,6 @@ export const signJwtToken = (
 
   return {
     token,
-    expiresAt,
+    expiresAt
   };
 };

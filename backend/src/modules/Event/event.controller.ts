@@ -1,10 +1,17 @@
 import { Request, Response } from "express";
-import { asyncHandlerAndValidation } from "../../middlewares/withValidation.middleware";
-import { CreateEventDto, EventIdDTO, UserNameAndSlugDTO, UserNameDTO } from "../../database/dto/event.dto";
-import { createEventService, deleteEventService, getPublicEventByUsernameAndSlugService, getPublicEventsByUsernameService, getUserEventsService, toggleEventPrivacyService } from "./event.service";
-import { HTTPSTATUS } from "../../config/http.config";
-import { asyncHandler } from "../../middlewares/asyncHandler.middeware";
+import { asyncHandlerAndValidation } from "../../core/middlewares/withValidation.middleware";
 
+import {
+  createEventService,
+  deleteEventService,
+  getPublicEventByUsernameAndSlugService,
+  getPublicEventsByUsernameService,
+  getUserEventsService,
+  toggleEventPrivacyService
+} from "./event.service";
+import { HTTPSTATUS } from "../../core/config/http.config";
+import { asyncHandler } from "../../core/middlewares/asyncHandler.middeware";
+import { CreateEventDto, EventIdDTO, UserNameAndSlugDTO, UserNameDTO } from "../../core/database/dto/event.dto";
 
 export const createEventController = asyncHandlerAndValidation(
   CreateEventDto,
@@ -16,7 +23,7 @@ export const createEventController = asyncHandlerAndValidation(
 
     return res.status(HTTPSTATUS.CREATED).json({
       message: "Event created successfully",
-      event,
+      event
     });
   }
 );
@@ -30,14 +37,14 @@ export const getUserEventsController = asyncHandler(
       message: "User event fetched successfully",
       data: {
         events,
-        username,
-      },
+        username
+      }
     });
   }
 );
 
 export const toggleEventPrivacyController = asyncHandlerAndValidation(
-  EventIdDTO ,
+  EventIdDTO,
   "body",
   async (req: Request, res: Response, eventIdDto) => {
     const userId = req.user?.id as string;
@@ -47,7 +54,7 @@ export const toggleEventPrivacyController = asyncHandlerAndValidation(
     return res.status(HTTPSTATUS.OK).json({
       message: `Event set to ${
         event.isPrivate ? "private" : "public"
-      } successfully`,
+      } successfully`
     });
   }
 );
@@ -64,7 +71,7 @@ export const getPublicEventsByUsernameController = asyncHandlerAndValidation(
     return res.status(HTTPSTATUS.OK).json({
       message: "Public events fetched successfully",
       user,
-      events,
+      events
     });
   }
 );
@@ -74,13 +81,12 @@ export const getPublicEventByUsernameAndSlugController =
     UserNameAndSlugDTO,
     "params",
     async (req: Request, res: Response, userNameAndSlugDto) => {
-      const event = await getPublicEventByUsernameAndSlugService(
-        userNameAndSlugDto
-      );
+      const event =
+        await getPublicEventByUsernameAndSlugService(userNameAndSlugDto);
 
       return res.status(HTTPSTATUS.OK).json({
         message: "Event details fetched successfully",
-        event,
+        event
       });
     }
   );
@@ -93,7 +99,7 @@ export const deleteEventController = asyncHandlerAndValidation(
 
     await deleteEventService(userId, eventIdDto.eventId);
     return res.status(HTTPSTATUS.OK).json({
-      message: "Event deleted successfully",
+      message: "Event deleted successfully"
     });
   }
 );

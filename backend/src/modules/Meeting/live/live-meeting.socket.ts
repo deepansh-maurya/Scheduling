@@ -1,8 +1,8 @@
 import { IncomingMessage } from "node:http";
-import { redisClient } from "../../../config/redis.config";
-import { wsLiveMeet } from "../../../config/socket.config";
+import { redisClient } from "../../../core/config/redis.config";
+import { wsLiveMeet } from "../../../core/config/socket.config";
 import { deepgramConnection } from "./deepgram.provider";
-import { User } from "../../../database/entities/user.entity";
+import { User } from "../../../core/database/entities/user.entity";
 import { RawData, WebSocket } from "ws";
 import { createEmbeddingsAndSave } from "../meeting.service";
 

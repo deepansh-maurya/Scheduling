@@ -1,10 +1,10 @@
-import { AppDataSource } from "../../config/database.config";
-import { CreateEventDto, UserNameAndSlugDTO } from "../../database/dto/event.dto";
-import { Event, EventLocationEnumType } from "../../database/entities/event.entity";
-import { Integration, IntegrationProviderEnum } from "../../database/entities/integration.entity";
-import { User } from "../../database/entities/user.entity";
-import { BadRequestException, NotFoundException } from "../../utils/app-error";
-import { slugify } from "../../utils/helper";
+import { AppDataSource } from "../../core/config/database.config";
+import { CreateEventDto, UserNameAndSlugDTO } from "../../core/database/dto/event.dto";
+import { Event, EventLocationEnumType } from "../../core/database/entities/event.entity";
+import { Integration, IntegrationProviderEnum } from "../../core/database/entities/integration.entity";
+import { User } from "../../core/database/entities/user.entity";
+import { BadRequestException, NotFoundException } from "../../core/utils/app-error";
+import { slugify } from "../../core/utils/helper";
 
 export const createEventService = async (
   userId: string,
@@ -83,7 +83,7 @@ export const toggleEventPrivacyService = async (
   if (!integration) {
     throw new NotFoundException(
       `Integrate ${
-        locationType == EventLocationEnumType.GOOGLE_MEET_AND_CALENDAR  
+        locationType == EventLocationEnumType.GOOGLE_MEET_AND_CALENDAR
           ? IntegrationProviderEnum.GOOGLE
           : locationType == EventLocationEnumType.MICROSOFT_TEAMS_AND_OUTLOOK
             ? IntegrationProviderEnum.MICROSOFT

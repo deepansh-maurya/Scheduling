@@ -15,7 +15,7 @@ const appConfig = () => ({
   GOOGLE_REDIRECT_URI: getEnv("GOOGLE_REDIRECT_URI"),
 
   FRONTEND_ORIGIN: getEnv("FRONTEND_ORIGIN", "localhost"),
-  FRONTEND_INTEGRATION_URL: getEnv("FRONTEND_INTEGRATION_URL"),
+  FRONTEND_INTEGRATION_URL: getEnv("FRONTEND_INTEGRATION_URL")
 });
 
 export const config = appConfig();

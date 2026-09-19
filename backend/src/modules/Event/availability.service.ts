@@ -1,19 +1,19 @@
 import { addDays, addMinutes, format, parseISO } from "date-fns";
-import { User } from "../../database/entities/user.entity";
-import { AppDataSource } from "../../config/database.config";
-import { NotFoundException } from "../../utils/app-error";
-import { AvailabilityResponseType } from "../../@types/availability.type";
-import { UpdateAvailabilityDto } from "../../database/dto/availability.dto";
-import { Availability } from "../../database/entities/availability.entity";
-import { DayOfWeekEnum } from "../../database/entities/day-availability";
-import { Event } from "../../database/entities/event.entity";
+import { User } from "../../core/database/entities/user.entity";
+import { AppDataSource } from "../../core/config/database.config";
+import { NotFoundException } from "../../core/utils/app-error";
+import { AvailabilityResponseType } from "../../core/@types/availability.type";
+import { UpdateAvailabilityDto } from "../../core/database/dto/availability.dto";
+import { Availability } from "../../core/database/entities/availability.entity";
+import { DayOfWeekEnum } from "../../core/database/entities/day-availability";
+import { Event } from "../../core/database/entities/event.entity";
 
 export const getUserAvailabilityService = async (userId: string) => {
   const userRepository = AppDataSource.getRepository(User);
 
   const user = await userRepository.findOne({
     where: { id: userId },
-    relations: ["availability", "availability.days"],
+    relations: ["availability", "availability.days"]
   });
   if (!user || !user.availability) {
     throw new NotFoundException("User not found or availbility");
@@ -21,7 +21,7 @@ export const getUserAvailabilityService = async (userId: string) => {
 
   const availabilityData: AvailabilityResponseType = {
     timeGap: user.availability.timeGap,
-    days: [],
+    days: []
   };
 
   user.availability.days.forEach((dayAvailability) => {
@@ -29,7 +29,7 @@ export const getUserAvailabilityService = async (userId: string) => {
       day: dayAvailability.day,
       startTime: dayAvailability.startTime.toISOString().slice(11, 16),
       endTime: dayAvailability.endTime.toISOString().slice(11, 16),
-      isAvailable: dayAvailability.isAvailable,
+      isAvailable: dayAvailability.isAvailable
     });
   });
 
@@ -45,7 +45,7 @@ export const updateAvailabilityService = async (
 
   const user = await userRepository.findOne({
     where: { id: userId },
-    relations: ["availability", "availability.days"],
+    relations: ["availability", "availability.days"]
   });
 
   if (!user) throw new NotFoundException("User not found");
@@ -57,7 +57,7 @@ export const updateAvailabilityService = async (
         day: day.toUpperCase() as DayOfWeekEnum,
         startTime: new Date(`${baseDate}T${startTime}:00Z`),
         endTime: new Date(`${baseDate}T${endTime}:00Z`),
-        isAvailable,
+        isAvailable
       };
     }
   );
@@ -68,8 +68,8 @@ export const updateAvailabilityService = async (
       timeGap: data.timeGap,
       days: dayAvailabilityData.map((day) => ({
         ...day,
-        availability: { id: user.availability.id },
-      })),
+        availability: { id: user.availability.id }
+      }))
     });
   }
 
@@ -85,8 +85,8 @@ export const getAvailabilityForPublicEventService = async (eventId: string) => {
       "user",
       "user.availability",
       "user.availability.days",
-      "user.meetings",
-    ],
+      "user.meetings"
+    ]
   });
 
   if (!event || !event.user.availability) return [];
@@ -117,7 +117,7 @@ export const getAvailabilityForPublicEventService = async (eventId: string) => {
       availableDays.push({
         day: dayOfWeek,
         slots,
-        isAvailable: dayAvailability.isAvailable,
+        isAvailable: dayAvailability.isAvailable
       });
     }
   }
@@ -133,7 +133,7 @@ function getNextDateForDay(dayOfWeek: string): Date {
     "WEDNESDAY",
     "THURSDAY",
     "FRIDAY",
-    "SATURDAY",
+    "SATURDAY"
   ];
 
   const today = new Date();

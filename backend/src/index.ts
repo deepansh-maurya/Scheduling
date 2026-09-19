@@ -1,23 +1,26 @@
 import "dotenv/config";
-import "./config/auth.config";
+import "./core/config/auth.config";
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
-import { config } from "./config/app.config";
-import { HTTPSTATUS } from "./config/http.config";
-import { errorHandler } from "./middlewares/errorHandler.middleware";
-import { asyncHandler } from "./middlewares/asyncHandler.middeware";
-import { initializeDatabase } from "./database/database";
+import { config } from "./core/config/app.config";
+import { HTTPSTATUS } from "./core/config/http.config";
+import { errorHandler } from "./core/middlewares/errorHandler.middleware";
+import { asyncHandler } from "./core/middlewares/asyncHandler.middeware";
+import { initializeDatabase } from "./core/database/database";
 import authRoutes from "./modules/Auth/auth.route";
 import passport from "passport";
 import eventRoutes from "./modules/Event/event.route";
 import availabilityRoutes from "./modules/Event/availability.route";
 import meetingRoutes from "./modules/Meeting/meeting.route";
 import { createServer } from "http";
-import { wsLiveMeet } from "./config/socket.config";
-import { authenticateWebSocket } from "./config/auth.config";
-import { connectRedis } from "./config/redis.config";
-import { AppDataSource } from "./config/database.config";
-import { Meeting, MeetingStatus } from "./database/entities/meeting.entity";
+import { wsLiveMeet } from "./core/config/socket.config";
+import { authenticateWebSocket } from "./core/config/auth.config";
+import { connectRedis } from "./core/config/redis.config";
+import { AppDataSource } from "./core/config/database.config";
+import {
+  Meeting,
+  MeetingStatus
+} from "./core/database/entities/meeting.entity";
 import "./modules/Meeting/live/live-meeting.socket";
 import integrationRoutes from "./modules/Integration/integration.route";
 
@@ -58,7 +61,7 @@ app.get(
 app.use(`${BASE_PATH}/auth`, authRoutes);
 app.use(`${BASE_PATH}/event`, eventRoutes);
 app.use(`${BASE_PATH}/availability`, availabilityRoutes);
-app.use(`${BASE_PATH}/integration`, integrationRoutes );
+app.use(`${BASE_PATH}/integration`, integrationRoutes);
 app.use(`${BASE_PATH}/meeting`, meetingRoutes);
 
 app.use(errorHandler);

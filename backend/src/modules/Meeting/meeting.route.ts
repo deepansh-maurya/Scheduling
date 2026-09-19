@@ -5,7 +5,7 @@ import {
   getUserMeetingsController,
   syncMeetings
 } from "./meeting.controller";
-import { httpAuthenticate } from "../../config/auth.config";
+import { httpAuthenticate } from "../../core/config/auth.config";
 
 const meetingRoutes = Router();
 

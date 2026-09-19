@@ -45,7 +45,7 @@ function formatValidationError(res: Response, errors: ValidationError[]) {
     errorCode: ErrorCodeEnum.VALIDATION_ERROR,
     errors: errors.map((err) => ({
       field: err.property,
-      message: err.constraints,
-    })),
+      message: err.constraints
+    }))
   });
 }

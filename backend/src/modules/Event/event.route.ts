@@ -7,7 +7,7 @@ import {
   getUserEventsController,
   toggleEventPrivacyController
 } from "../controllers/event.controller";
-import { httpAuthenticate } from "../../config/auth.config";
+import { httpAuthenticate } from "../../core/config/auth.config";
 
 const eventRoutes = Router();
 

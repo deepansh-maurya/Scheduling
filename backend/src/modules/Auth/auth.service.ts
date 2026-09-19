@@ -1,12 +1,16 @@
 import { v4 as uuidv4 } from "uuid";
-import { LoginDto, RegisterDto } from "../../database/dto/auth.dto";
-import { User } from "../../database/entities/user.entity";
-import { AppDataSource } from "../../config/database.config";
-import { DayAvailability, DayOfWeekEnum } from "../../database/entities/day-availability";
-import { Availability } from "../../database/entities/availability.entity";
-import { BadRequestException, NotFoundException, UnauthorizedException } from "../../utils/app-error";
-import { signJwtToken } from "../../utils/jwt";
+import { LoginDto, RegisterDto } from "../../core/database/dto/auth.dto";
+import { User } from "../../core/database/entities/user.entity";
+import { AppDataSource } from "../../core/config/database.config";
 
+import {
+  BadRequestException,
+  NotFoundException,
+  UnauthorizedException
+} from "../../core/utils/app-error";
+import { signJwtToken } from "../../core/utils/jwt";
+import { Availability } from "../../core/database/entities/availability.entity";
+import { DayAvailability, DayOfWeekEnum } from "../../core/database/entities/day-availability";
 
 export const registerService = async (registerDto: RegisterDto) => {
   const userRepository = AppDataSource.getRepository(User);
@@ -15,7 +19,7 @@ export const registerService = async (registerDto: RegisterDto) => {
     AppDataSource.getRepository(DayAvailability);
 
   const existingUser = await userRepository.findOne({
-    where: { email: registerDto.email },
+    where: { email: registerDto.email }
   });
 
   if (existingUser) {
@@ -25,7 +29,7 @@ export const registerService = async (registerDto: RegisterDto) => {
   const username = await generateUsername(registerDto.name);
   const user = userRepository.create({
     ...registerDto,
-    username,
+    username
   });
 
   const availability = availabilityRepository.create({
@@ -36,9 +40,9 @@ export const registerService = async (registerDto: RegisterDto) => {
         startTime: new Date(`2025-03-01T09:00:00Z`), //9:00
         endTime: new Date(`2025-03-01T17:00:00Z`), //5:00pm
         isAvailable:
-          day !== DayOfWeekEnum.SUNDAY && day !== DayOfWeekEnum.SATURDAY,
+          day !== DayOfWeekEnum.SUNDAY && day !== DayOfWeekEnum.SATURDAY
       });
-    }),
+    })
   });
 
   user.availability = availability;
@@ -52,7 +56,7 @@ export const loginService = async (loginDto: LoginDto) => {
   const userRepository = AppDataSource.getRepository(User);
 
   const user = await userRepository.findOne({
-    where: { email: loginDto.email },
+    where: { email: loginDto.email }
   });
 
   if (!user) {
@@ -69,7 +73,7 @@ export const loginService = async (loginDto: LoginDto) => {
   return {
     user: user.omitPassword(),
     accessToken: token,
-    expiresAt,
+    expiresAt
   };
 };
 
@@ -82,13 +86,13 @@ async function generateUsername(name: string): Promise<string> {
 
   let username = `${baseUsername}${uuidSuffix}`;
   let existingUser = await userRepository.findOne({
-    where: { username },
+    where: { username }
   });
 
   while (existingUser) {
     username = `${baseUsername}${uuidv4().replace(/\s+/g, "").slice(0, 4)}`;
     existingUser = await userRepository.findOne({
-      where: { username },
+      where: { username }
     });
   }
 

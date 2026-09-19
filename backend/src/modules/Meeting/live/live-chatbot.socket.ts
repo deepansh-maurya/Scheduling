@@ -1,14 +1,14 @@
 import { IncomingMessage } from "node:http";
-import { wsChatbot } from "../../../config/socket.config";
-import { User } from "../../../database/entities/user.entity";
+import { wsChatbot } from "../../../core/config/socket.config";
+import { User } from "../../../core/database/entities/user.entity";
 import { RawData, WebSocket } from "ws";
-import { AppDataSource } from "../../../config/database.config";
-import { TranscriptChunk } from "../../../database/entities/transcript-chunk.entity";
+import { AppDataSource } from "../../../core/config/database.config";
+import { TranscriptChunk } from "../../../core/database/entities/transcript-chunk.entity";
 import ollama from "ollama";
-import { Meeting } from "../../../database/entities/meeting.entity";
-import { Llm, LlmMessage } from "../../../config/nvidia.config";
-import { meetingPrompt } from "../../../Prompts/meeting.prompt";
-import { redisClient } from "../../../config/redis.config";
+import { Meeting } from "../../../core/database/entities/meeting.entity";
+import { Llm, LlmMessage } from "../../../core/config/nvidia.config";
+import { meetingPrompt } from "../../../core/Prompts/meeting.prompt";
+import { redisClient } from "../../../core/config/redis.config";
 
 interface Message {
   question: string;

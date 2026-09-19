@@ -9,7 +9,7 @@ import {
   zoomOAuthCallbackController,
   zoomOAuthController
 } from "./integration.controller";
-import { httpAuthenticate } from "../../config/auth.config";
+import { httpAuthenticate } from "../../core/config/auth.config";
 
 const integrationRoutes = Router();
 

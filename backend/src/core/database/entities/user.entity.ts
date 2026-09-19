@@ -8,7 +8,7 @@ import {
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
-  UpdateDateColumn,
+  UpdateDateColumn
 } from "typeorm";
 import { compareValue, hashValue } from "../../utils/bcrypt";
 import { Integration } from "./integration.entity";
@@ -37,23 +37,23 @@ export class User {
   imageUrl: string;
 
   @OneToMany(() => Event, (event) => event.user, {
-    cascade: true,
+    cascade: true
   })
   events: Event[];
 
   @OneToMany(() => Integration, (integration) => integration.user, {
-    cascade: true,
+    cascade: true
   })
   integrations: Integration[];
 
   @OneToOne(() => Availability, (availability) => availability.user, {
-    cascade: true,
+    cascade: true
   })
   @JoinColumn()
   availability: Availability;
 
   @OneToMany(() => Meeting, (meeting) => meeting.user, {
-    cascade: true,
+    cascade: true
   })
   meetings: Meeting[];
 

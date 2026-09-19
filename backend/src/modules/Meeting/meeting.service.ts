@@ -1,19 +1,39 @@
 import { LessThan, MoreThan } from "typeorm";
 import ollama from "ollama";
-import { MeetingFilterEnum, MeetingFilterEnumType } from "../../enums/meeting.enum";
-import { Meeting, MeetingStatus, MeetingType } from "../../database/entities/meeting.entity";
-import { AppDataSource } from "../../config/database.config";
-import { Integration, IntegrationAppTypeEnum, IntegrationProviderEnum } from "../../database/entities/integration.entity";
-import { User } from "../../database/entities/user.entity";
-import { googleOAuth2Client } from "../../config/oauth.config";
+import axios from "axios";
+import {
+  getMicrosoftAccessToken,
+  validateGoogleToken
+} from "../Integration/integration.service";
+import {
+  MeetingFilterEnum,
+  MeetingFilterEnumType
+} from "../../core/enums/meeting.enum";
+import {
+  Meeting,
+  MeetingStatus,
+  MeetingType
+} from "../../core/database/entities/meeting.entity";
+import { AppDataSource } from "../../core/config/database.config";
+import {
+  Integration,
+  IntegrationAppTypeEnum,
+  IntegrationProviderEnum
+} from "../../core/database/entities/integration.entity";
+import { User } from "../../core/database/entities/user.entity";
+import { googleOAuth2Client } from "../../core/config/oauth.config";
 import { google } from "googleapis";
-import axios from "axios"
-import { CreateMeetingDto } from "../../database/dto/meeting.dto";
-import { BadRequestException, NotFoundException } from "../../utils/app-error";
-import { Event, EventLocationEnumType } from "../../database/entities/event.entity";
-import { redisClient } from "../../config/redis.config";
-import { TranscriptChunk } from "../../database/entities/transcript-chunk.entity";
-import { getMicrosoftAccessToken, validateGoogleToken } from "../Integration/integration.service";
+import { CreateMeetingDto } from "../../core/database/dto/meeting.dto";
+import {
+  Event,
+  EventLocationEnumType
+} from "../../core/database/entities/event.entity";
+import {
+  BadRequestException,
+  NotFoundException
+} from "../../core/utils/app-error";
+import { TranscriptChunk } from "../../core/database/entities/transcript-chunk.entity";
+import { redisClient } from "../../core/config/redis.config";
 
 export const getUserMeetingsService = async (
   userId: string,
@@ -135,7 +155,7 @@ export const getmeetingsFromProvidersAndSave = async (userId: string) => {
       endTime: new Date(endTime),
       attendees,
       calendarEventId: googleEvent.id,
-      calendarAppType: IntegrationAppTypeEnum .GOOGLE_MEET_AND_CALENDAR,
+      calendarAppType: IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR,
       meetingType: MeetingType.CALENDAR_EVENT,
       status:
         googleEvent.status === "cancelled"

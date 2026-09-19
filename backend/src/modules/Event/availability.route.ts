@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { httpAuthenticate } from "../../config/auth.config";
+import { httpAuthenticate } from "../../core/config/auth.config";
 import {
   getAvailabilityForPublicEventController,
   getUserAvailabilityController,

@@ -1,21 +1,26 @@
 import { Request, Response } from "express";
-import { asyncHandler } from "../../middlewares/asyncHandler.middeware";
-import { HTTPSTATUS } from "../../config/http.config";
+import { asyncHandler } from "../../core/middlewares/asyncHandler.middeware";
+import { HTTPSTATUS } from "../../core/config/http.config";
 
-import { asyncHandlerAndValidation } from "../../middlewares/withValidation.middleware";
-import { AppTypeDTO, ProviderDTO } from "../../database/dto/integration.dto";
-import { config } from "../../config/app.config";
-import { decodeState, encodeState } from "../../utils/helper";
-import { googleOAuth2Client, microsoftClient } from "../../config/oauth.config";
+import { asyncHandlerAndValidation } from "../../core/middlewares/withValidation.middleware";
+import { AppTypeDTO, ProviderDTO } from "../../core/database/dto/integration.dto";
+import { config } from "../../core/config/app.config";
+import { decodeState, encodeState } from "../../core/utils/helper";
 import {
-  Integration,
-  IntegrationAppTypeEnum,
-  IntegrationCategoryEnum,
-  IntegrationProviderEnum
-} from "../../database/entities/integration.entity";
+  googleOAuth2Client,
+  microsoftClient
+} from "../../core/config/oauth.config";
+
 import axios from "axios";
-import { AppDataSource } from "../../config/database.config";
-import { checkIntegrationService, connectAppService, createIntegrationService, dissconencteService, getUserIntegrationsService } from "./integration.service";
+import { AppDataSource } from "../../core/config/database.config";
+import {
+  checkIntegrationService,
+  connectAppService,
+  createIntegrationService,
+  dissconencteService,
+  getUserIntegrationsService
+} from "./integration.service";
+import { IntegrationAppTypeEnum, IntegrationCategoryEnum, IntegrationProviderEnum } from "../../core/database/entities/integration.entity";
 
 const CLIENT_APP_URL = config.FRONTEND_INTEGRATION_URL;
 
@@ -107,7 +112,7 @@ export const googleOAuthCallbackController = asyncHandler(
     await createIntegrationService({
       userId: userId,
       provider: IntegrationProviderEnum.GOOGLE,
-      category: IntegrationCategoryEnum.CALENDAR_AND_VIDEO_CONFERENCING,
+      category: IntegrationCategoryEnum .CALENDAR_AND_VIDEO_CONFERENCING,
       app_type: IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR,
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token || undefined,
