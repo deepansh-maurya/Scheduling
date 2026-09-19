@@ -4,8 +4,8 @@ import {
   createMeetBookingForGuestController,
   getUserMeetingsController,
   syncMeetings
-} from "../controllers/meeting.controller";
-import { httpAuthenticate } from "../config/auth.config";
+} from "./meeting.controller";
+import { httpAuthenticate } from "../../config/auth.config";
 
 const meetingRoutes = Router();
 

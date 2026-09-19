@@ -1,23 +1,10 @@
 import { Request, Response } from "express";
-import { asyncHandler } from "../middlewares/asyncHandler.middeware";
-import { HTTPSTATUS } from "../config/http.config";
-import {
-  MeetingFilterEnum,
-  MeetingFilterEnumType
-} from "../enums/meeting.enum";
-import {
-  cancelMeetingService,
-  createMeetBookingForGuestService,
-  getmeetingsFromProvidersAndSave,
-  getOutlookMeetingsFromProviderAndSave,
-  getUserMeetingsService
-} from "../services/meeting.service";
-import { asyncHandlerAndValidation } from "../middlewares/withValidation.middleware";
-import {
-  CreateMeetingDto,
-  MeetingIdDTO,
-  MeetingTypeDto
-} from "../database/dto/meeting.dto";
+import { asyncHandlerAndValidation } from "../../middlewares/withValidation.middleware";
+import { CreateMeetingDto, MeetingIdDTO, MeetingTypeDto } from "../../database/dto/meeting.dto";
+import { MeetingFilterEnum, MeetingFilterEnumType } from "../../enums/meeting.enum";
+import { cancelMeetingService, createMeetBookingForGuestService, getmeetingsFromProvidersAndSave, getOutlookMeetingsFromProviderAndSave, getUserMeetingsService } from "./meeting.service";
+import { HTTPSTATUS } from "../../config/http.config";
+import { asyncHandler } from "../../middlewares/asyncHandler.middeware";
 
 export const getUserMeetingsController = asyncHandlerAndValidation(
   MeetingTypeDto,

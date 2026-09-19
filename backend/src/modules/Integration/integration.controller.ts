@@ -1,26 +1,21 @@
 import { Request, Response } from "express";
-import { asyncHandler } from "../middlewares/asyncHandler.middeware";
-import { HTTPSTATUS } from "../config/http.config";
-import {
-  checkIntegrationService,
-  connectAppService,
-  createIntegrationService,
-  dissconencteService,
-  getUserIntegrationsService
-} from "../services/integration.service";
-import { asyncHandlerAndValidation } from "../middlewares/withValidation.middleware";
-import { AppTypeDTO, ProviderDTO } from "../database/dto/integration.dto";
-import { config } from "../config/app.config";
-import { decodeState, encodeState } from "../utils/helper";
-import { googleOAuth2Client, microsoftClient } from "../config/oauth.config";
+import { asyncHandler } from "../../middlewares/asyncHandler.middeware";
+import { HTTPSTATUS } from "../../config/http.config";
+
+import { asyncHandlerAndValidation } from "../../middlewares/withValidation.middleware";
+import { AppTypeDTO, ProviderDTO } from "../../database/dto/integration.dto";
+import { config } from "../../config/app.config";
+import { decodeState, encodeState } from "../../utils/helper";
+import { googleOAuth2Client, microsoftClient } from "../../config/oauth.config";
 import {
   Integration,
   IntegrationAppTypeEnum,
   IntegrationCategoryEnum,
   IntegrationProviderEnum
-} from "../database/entities/integration.entity";
+} from "../../database/entities/integration.entity";
 import axios from "axios";
-import { AppDataSource } from "../config/database.config";
+import { AppDataSource } from "../../config/database.config";
+import { checkIntegrationService, connectAppService, createIntegrationService, dissconencteService, getUserIntegrationsService } from "./integration.service";
 
 const CLIENT_APP_URL = config.FRONTEND_INTEGRATION_URL;
 

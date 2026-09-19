@@ -1,16 +1,10 @@
-import { AppDataSource } from "../config/database.config";
-import { CreateEventDto, UserNameAndSlugDTO } from "../database/dto/event.dto";
-import {
-  Event,
-  EventLocationEnumType
-} from "../database/entities/event.entity";
-import {
-  Integration,
-  IntegrationProviderEnum
-} from "../database/entities/integration.entity";
-import { User } from "../database/entities/user.entity";
-import { BadRequestException, NotFoundException } from "../utils/app-error";
-import { slugify } from "../utils/helper";
+import { AppDataSource } from "../../config/database.config";
+import { CreateEventDto, UserNameAndSlugDTO } from "../../database/dto/event.dto";
+import { Event, EventLocationEnumType } from "../../database/entities/event.entity";
+import { Integration, IntegrationProviderEnum } from "../../database/entities/integration.entity";
+import { User } from "../../database/entities/user.entity";
+import { BadRequestException, NotFoundException } from "../../utils/app-error";
+import { slugify } from "../../utils/helper";
 
 export const createEventService = async (
   userId: string,

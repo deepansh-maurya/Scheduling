@@ -7,12 +7,11 @@ import { HTTPSTATUS } from "./config/http.config";
 import { errorHandler } from "./middlewares/errorHandler.middleware";
 import { asyncHandler } from "./middlewares/asyncHandler.middeware";
 import { initializeDatabase } from "./database/database";
-import authRoutes from "./routes/auth.route";
+import authRoutes from "./modules/Auth/auth.route";
 import passport from "passport";
-import eventRoutes from "./routes/event.route";
-import availabilityRoutes from "./routes/availability.route";
-import integrationRoutes from "./routes/integration.route";
-import meetingRoutes from "./routes/meeting.route";
+import eventRoutes from "./modules/Event/event.route";
+import availabilityRoutes from "./modules/Event/availability.route";
+import meetingRoutes from "./modules/Meeting/meeting.route";
 import { createServer } from "http";
 import { wsLiveMeet } from "./config/socket.config";
 import { authenticateWebSocket } from "./config/auth.config";
@@ -20,6 +19,7 @@ import { connectRedis } from "./config/redis.config";
 import { AppDataSource } from "./config/database.config";
 import { Meeting, MeetingStatus } from "./database/entities/meeting.entity";
 import "./modules/Meeting/live/live-meeting.socket";
+import integrationRoutes from "./modules/Integration/integration.route";
 
 const app = express();
 const BASE_PATH = config.BASE_PATH;
@@ -58,7 +58,7 @@ app.get(
 app.use(`${BASE_PATH}/auth`, authRoutes);
 app.use(`${BASE_PATH}/event`, eventRoutes);
 app.use(`${BASE_PATH}/availability`, availabilityRoutes);
-app.use(`${BASE_PATH}/integration`, integrationRoutes);
+app.use(`${BASE_PATH}/integration`, integrationRoutes );
 app.use(`${BASE_PATH}/meeting`, meetingRoutes);
 
 app.use(errorHandler);

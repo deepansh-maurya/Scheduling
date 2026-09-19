@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { httpAuthenticate } from "../config/auth.config"
+import { httpAuthenticate } from "../../config/auth.config";
 import {
   getAvailabilityForPublicEventController,
   getUserAvailabilityController,
@@ -10,18 +10,12 @@ const availabilityRoutes = Router();
 
 availabilityRoutes.use(httpAuthenticate);
 
-availabilityRoutes.get(
-  "/me",
-  getUserAvailabilityController
-);
+availabilityRoutes.get("/me", getUserAvailabilityController);
 
 availabilityRoutes.get(
   "/public/:eventId",
   getAvailabilityForPublicEventController
 );
 
-availabilityRoutes.put(
-  "/update",
-  updateAvailabilityController
-);
+availabilityRoutes.put("/update", updateAvailabilityController);
 export default availabilityRoutes;

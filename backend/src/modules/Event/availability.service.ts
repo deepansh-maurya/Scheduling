@@ -1,12 +1,12 @@
-import { AvailabilityResponseType } from "../@types/availability.type";
-import { AppDataSource } from "../config/database.config";
-import { User } from "../database/entities/user.entity";
-import { NotFoundException } from "../utils/app-error";
-import { UpdateAvailabilityDto } from "../database/dto/availability.dto";
-import { Availability } from "../database/entities/availability.entity";
-import { DayOfWeekEnum } from "../database/entities/day-availability";
-import { Event } from "../database/entities/event.entity";
 import { addDays, addMinutes, format, parseISO } from "date-fns";
+import { User } from "../../database/entities/user.entity";
+import { AppDataSource } from "../../config/database.config";
+import { NotFoundException } from "../../utils/app-error";
+import { AvailabilityResponseType } from "../../@types/availability.type";
+import { UpdateAvailabilityDto } from "../../database/dto/availability.dto";
+import { Availability } from "../../database/entities/availability.entity";
+import { DayOfWeekEnum } from "../../database/entities/day-availability";
+import { Event } from "../../database/entities/event.entity";
 
 export const getUserAvailabilityService = async (userId: string) => {
   const userRepository = AppDataSource.getRepository(User);

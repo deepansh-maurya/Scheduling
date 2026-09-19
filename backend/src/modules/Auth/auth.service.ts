@@ -1,18 +1,12 @@
 import { v4 as uuidv4 } from "uuid";
-import { AppDataSource } from "../config/database.config";
-import { LoginDto, RegisterDto } from "../database/dto/auth.dto";
-import { User } from "../database/entities/user.entity";
-import {
-  BadRequestException,
-  NotFoundException,
-  UnauthorizedException,
-} from "../utils/app-error";
-import { Availability } from "../database/entities/availability.entity";
-import {
-  DayAvailability,
-  DayOfWeekEnum,
-} from "../database/entities/day-availability";
-import { signJwtToken } from "../utils/jwt";
+import { LoginDto, RegisterDto } from "../../database/dto/auth.dto";
+import { User } from "../../database/entities/user.entity";
+import { AppDataSource } from "../../config/database.config";
+import { DayAvailability, DayOfWeekEnum } from "../../database/entities/day-availability";
+import { Availability } from "../../database/entities/availability.entity";
+import { BadRequestException, NotFoundException, UnauthorizedException } from "../../utils/app-error";
+import { signJwtToken } from "../../utils/jwt";
+
 
 export const registerService = async (registerDto: RegisterDto) => {
   const userRepository = AppDataSource.getRepository(User);

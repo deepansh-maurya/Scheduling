@@ -1,5 +1,5 @@
 import { config } from "./app.config";
-import { findByIdUserService } from "../services/user.service";
+import { findByIdUserService } from "../modules/Auth/user.service";
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { IncomingMessage } from "node:http";

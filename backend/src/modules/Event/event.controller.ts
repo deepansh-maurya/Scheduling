@@ -1,21 +1,10 @@
 import { Request, Response } from "express";
-import { HTTPSTATUS } from "../config/http.config";
-import { asyncHandlerAndValidation } from "../middlewares/withValidation.middleware";
-import {
-  CreateEventDto,
-  EventIdDTO,
-  UserNameAndSlugDTO,
-  UserNameDTO,
-} from "../database/dto/event.dto";
-import {
-  createEventService,
-  deleteEventService,
-  getPublicEventByUsernameAndSlugService,
-  getPublicEventsByUsernameService,
-  getUserEventsService,
-  toggleEventPrivacyService,
-} from "../services/event.service";
-import { asyncHandler } from "../middlewares/asyncHandler.middeware";
+import { asyncHandlerAndValidation } from "../../middlewares/withValidation.middleware";
+import { CreateEventDto, EventIdDTO, UserNameAndSlugDTO, UserNameDTO } from "../../database/dto/event.dto";
+import { createEventService, deleteEventService, getPublicEventByUsernameAndSlugService, getPublicEventsByUsernameService, getUserEventsService, toggleEventPrivacyService } from "./event.service";
+import { HTTPSTATUS } from "../../config/http.config";
+import { asyncHandler } from "../../middlewares/asyncHandler.middeware";
+
 
 export const createEventController = asyncHandlerAndValidation(
   CreateEventDto,
@@ -48,7 +37,7 @@ export const getUserEventsController = asyncHandler(
 );
 
 export const toggleEventPrivacyController = asyncHandlerAndValidation(
-  EventIdDTO,
+  EventIdDTO ,
   "body",
   async (req: Request, res: Response, eventIdDto) => {
     const userId = req.user?.id as string;

@@ -1,23 +1,22 @@
-import { AppDataSource } from "../config/database.config";
+import { ConfidentialClientApplication } from "@azure/msal-node";
+import { AppDataSource } from "../../config/database.config";
+import {
+  googleOAuth2Client,
+  microsoftClient,
+  msalConfig
+} from "../../config/oauth.config";
+import {
+  Event,
+  EventLocationEnumType
+} from "../../database/entities/event.entity";
 import {
   Integration,
   IntegrationAppTypeEnum,
   IntegrationCategoryEnum,
   IntegrationProviderEnum
-} from "../database/entities/integration.entity";
-import { BadRequestException } from "../utils/app-error";
-import {
-  googleOAuth2Client,
-  microsoftClient,
-  msalConfig
-} from "../config/oauth.config";
-import { encodeState } from "../utils/helper";
-import { User } from "../database/entities/user.entity";
-import { ConfidentialClientApplication } from "@azure/msal-node";
-import {
-  Event,
-  EventLocationEnumType
-} from "../database/entities/event.entity";
+} from "../../database/entities/integration.entity";
+import { BadRequestException } from "../../utils/app-error";
+import { encodeState } from "../../utils/helper";
 
 const appTypeToProviderMap: Record<
   IntegrationAppTypeEnum,

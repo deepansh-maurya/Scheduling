@@ -1,37 +1,19 @@
 import { LessThan, MoreThan } from "typeorm";
 import ollama from "ollama";
-import { AppDataSource } from "../config/database.config";
-import {
-  Meeting,
-  MeetingStatus,
-  MeetingType
-} from "../database/entities/meeting.entity";
-import {
-  MeetingFilterEnum,
-  MeetingFilterEnumType
-} from "../enums/meeting.enum";
-import { CreateMeetingDto } from "../database/dto/meeting.dto";
-import {
-  Event,
-  EventLocationEnumType
-} from "../database/entities/event.entity";
-import {
-  Integration,
-  IntegrationAppTypeEnum,
-  IntegrationCategoryEnum,
-  IntegrationProviderEnum
-} from "../database/entities/integration.entity";
-import { BadRequestException, NotFoundException } from "../utils/app-error";
-import {
-  getMicrosoftAccessToken,
-  validateGoogleToken
-} from "./integration.service";
-import { googleOAuth2Client } from "../config/oauth.config";
+import { MeetingFilterEnum, MeetingFilterEnumType } from "../../enums/meeting.enum";
+import { Meeting, MeetingStatus, MeetingType } from "../../database/entities/meeting.entity";
+import { AppDataSource } from "../../config/database.config";
+import { Integration, IntegrationAppTypeEnum, IntegrationProviderEnum } from "../../database/entities/integration.entity";
+import { User } from "../../database/entities/user.entity";
+import { googleOAuth2Client } from "../../config/oauth.config";
 import { google } from "googleapis";
-import { User } from "../database/entities/user.entity";
-import axios from "axios";
-import { redisClient } from "../config/redis.config";
-import { TranscriptChunk } from "../database/entities/transcript-chunk.entity";
+import axios from "axios"
+import { CreateMeetingDto } from "../../database/dto/meeting.dto";
+import { BadRequestException, NotFoundException } from "../../utils/app-error";
+import { Event, EventLocationEnumType } from "../../database/entities/event.entity";
+import { redisClient } from "../../config/redis.config";
+import { TranscriptChunk } from "../../database/entities/transcript-chunk.entity";
+import { getMicrosoftAccessToken, validateGoogleToken } from "../Integration/integration.service";
 
 export const getUserMeetingsService = async (
   userId: string,
@@ -153,7 +135,7 @@ export const getmeetingsFromProvidersAndSave = async (userId: string) => {
       endTime: new Date(endTime),
       attendees,
       calendarEventId: googleEvent.id,
-      calendarAppType: IntegrationAppTypeEnum.GOOGLE_MEET_AND_CALENDAR,
+      calendarAppType: IntegrationAppTypeEnum .GOOGLE_MEET_AND_CALENDAR,
       meetingType: MeetingType.CALENDAR_EVENT,
       status:
         googleEvent.status === "cancelled"

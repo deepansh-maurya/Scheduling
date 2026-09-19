@@ -1,5 +1,4 @@
 import { Router } from "express";
-import { httpAuthenticate } from "../config/auth.config";
 import {
   checkIntegrationController,
   connectAppController,
@@ -9,7 +8,8 @@ import {
   microfostOauthCallbackController,
   zoomOAuthCallbackController,
   zoomOAuthController
-} from "../controllers/integration.controller";
+} from "./integration.controller";
+import { httpAuthenticate } from "../../config/auth.config";
 
 const integrationRoutes = Router();
 

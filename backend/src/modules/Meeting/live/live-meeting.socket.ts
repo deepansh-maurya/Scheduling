@@ -3,8 +3,8 @@ import { redisClient } from "../../../config/redis.config";
 import { wsLiveMeet } from "../../../config/socket.config";
 import { deepgramConnection } from "./deepgram.provider";
 import { User } from "../../../database/entities/user.entity";
-import { createEmbeddingsAndSave } from "../../../services/meeting.service";
 import { RawData, WebSocket } from "ws";
+import { createEmbeddingsAndSave } from "../meeting.service";
 
 wsLiveMeet.on(
   "connection",
