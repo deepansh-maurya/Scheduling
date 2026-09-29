@@ -1,11 +1,16 @@
 import {
   Column,
+  CreateDateColumn,
   Entity,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   PrimaryGeneratedColumn,
+  UpdateDateColumn
 } from "typeorm";
 import { Meeting } from "./meeting.entity";
+import { MeetingParticipant } from "./meeting-participants.entity";
 
 @Entity({ name: "transcript_chunks" })
 export class TranscriptChunk {
@@ -13,7 +18,7 @@ export class TranscriptChunk {
   id: string;
 
   @ManyToOne(() => Meeting, (meeting) => meeting.transcriptChunks, {
-    onDelete: "CASCADE",
+    onDelete: "CASCADE"
   })
   @JoinColumn({ name: "meetingId" })
   meeting: Meeting;
@@ -30,9 +35,17 @@ export class TranscriptChunk {
   @Column({ type: "float" })
   startTime: number;
 
+  @ManyToMany(() => MeetingParticipant)
+  @JoinTable()
+  participants: MeetingParticipant[];
+
   @Column({ type: "float" })
   endTime: number;
 
-  @Column({ type: "int" })
-  channel: number;
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+  // channel removed
 }

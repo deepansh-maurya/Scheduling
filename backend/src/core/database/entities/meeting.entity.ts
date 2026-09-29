@@ -11,6 +11,7 @@ import { User } from "./user.entity";
 import { Event } from "./event.entity";
 import { IntegrationAppTypeEnum } from "./integration.entity";
 import { TranscriptChunk } from "./transcript-chunk.entity";
+import { MeetingParticipant } from "./meeting-participants.entity";
 
 export enum MeetingStatus {
   SCHEDULED = "SCHEDULED",
@@ -118,6 +119,15 @@ export class Meeting {
     (transcriptChunk) => transcriptChunk.meetingId
   )
   transcriptChunks: TranscriptChunk[];
+
+  @OneToMany(() => MeetingParticipant, (participant) => participant.meeting)
+  participants: MeetingParticipant[];
+
+  @Column({ type: "text", nullable: true })
+  meetingGist: string | null;
+
+  @Column({ type: "text", nullable: true })
+  chatbotGist: string | null;
 
   @CreateDateColumn()
   createdAt: Date;
