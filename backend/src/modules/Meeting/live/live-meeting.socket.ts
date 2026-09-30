@@ -1,10 +1,11 @@
 import { IncomingMessage } from "node:http";
-import { redisClient } from "../../../core/config/redis.config";
+import { redisClient, redisPubSub } from "../../../core/config/redis.config";
 import { wsLiveMeet } from "../../../core/config/socket.config";
 import { deepgramConnection } from "./deepgram.provider";
 import { User } from "../../../core/database/entities/user.entity";
 import { RawData, WebSocket } from "ws";
-import { createEmbeddingsAndSave } from "../meeting.service";
+
+// Window-Based Semantic Boundary Detection chunkiing strategy for running transcript
 
 wsLiveMeet.on(
   "connection",
@@ -14,6 +15,15 @@ wsLiveMeet.on(
 
       dgConnection.on("open", () => {
         console.log("dg connected");
+
+        redisPubSub.publish(
+          `meeting:start`,
+          JSON.stringify({
+            type: "START",
+            meetingId,
+            userId: user.id
+          })
+        );
       });
 
       dgConnection.on("message", async (data: any) => {
@@ -35,15 +45,12 @@ wsLiveMeet.on(
           if (transcript && data.is_final) {
             const key = `transcript:${user.id}:${meetingId}`;
 
-            await redisClient.rPush(
-              key,
-              JSON.stringify({
-                channel,
-                transcript,
-                start,
-                end
-              })
-            );
+            await redisClient.xAdd(key, "*", {
+              channel: String(channel),
+              transcript,
+              start: String(start),
+              end: String(end)
+            });
 
             ws.send(
               JSON.stringify({
@@ -51,12 +58,6 @@ wsLiveMeet.on(
                 transcript
               })
             );
-
-            const length = await redisClient.lLen(key);
-
-            if (length >= 60) {
-              createEmbeddingsAndSave(meetingId, user.id);
-            }
           }
         }
       });

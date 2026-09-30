@@ -31,7 +31,7 @@ export class TranscriptChunk {
 
   @Column("vector", { length: 768 })
   embedding: number[];
-
+  
   @Column({ type: "float" })
   startTime: number;
 
