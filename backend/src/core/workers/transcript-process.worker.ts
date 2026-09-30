@@ -1,11 +1,11 @@
 import ollama from "ollama";
 import { redisClient, redisPubSub } from "../config/redis.config";
 import { PubSubEnum } from "../enums/live-meet-con.enum";
-import { DeepPartial, NumericType, Repository } from "typeorm";
-import { AppDataSource } from "../config/database.config";
+import { DeepPartial, Repository } from "typeorm";
+import { AppDataSource, elasticsearch } from "../config/database.config";
 import { TranscriptChunk } from "../database/entities/transcript-chunk.entity";
 
-interface Message {
+interface Message { 
   type: "START" | "STOP";
   meetingId: string;
   userId: string;
@@ -182,6 +182,7 @@ class TranscriptProcessWorker {
               ];
 
               const chunk: DeepPartial<TranscriptChunk> =
+                //! doubtable
                 transcriptChunkRepo.create({
                   //@ts-ignore
                   embedding: embeddings,
@@ -191,6 +192,23 @@ class TranscriptProcessWorker {
                   participants: channels as any,
                   startTime: windowGroup[0].start
                 });
+
+              await elasticsearch.index({
+                index: "meetly_content",
+                id: chunk.id,
+                document: {
+                  id: chunk.id,
+                  type: "transcript_chunk",
+                  userId: this.userId,
+                  meetingId: chunk.meetingId,
+                  content: chunk.content,
+                  //! doubtable
+                  speakerIds: JSON.stringify(channels),
+                  startTime: chunk.startTime,
+                  endTime: chunk.endTime,
+                  createdAt: chunk.createdAt
+                }
+              });
 
               await transcriptChunkRepo.save(chunk);
 

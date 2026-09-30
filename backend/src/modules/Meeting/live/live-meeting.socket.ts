@@ -4,6 +4,7 @@ import { wsLiveMeet } from "../../../core/config/socket.config";
 import { deepgramConnection } from "./deepgram.provider";
 import { User } from "../../../core/database/entities/user.entity";
 import { RawData, WebSocket } from "ws";
+import { PubSubEnum } from "../../../core/enums/live-meet-con.enum";
 
 // Window-Based Semantic Boundary Detection chunkiing strategy for running transcript
 
@@ -17,7 +18,7 @@ wsLiveMeet.on(
         console.log("dg connected");
 
         redisPubSub.publish(
-          `meeting:start`,
+          PubSubEnum.START,
           JSON.stringify({
             type: "START",
             meetingId,
@@ -67,6 +68,14 @@ wsLiveMeet.on(
       });
 
       ws.on("close", () => {
+        redisPubSub.publish(
+          PubSubEnum.STOP,
+          JSON.stringify({
+            type: "START",
+            meetingId,
+            userId: user.id
+          })
+        );
         dgConnection.close();
       });
 

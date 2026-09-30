@@ -32,6 +32,16 @@ services:
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
 
+  transcript-worker:
+    build: .
+    command: npx ts-node src/workers/transcript.worker.ts
+    depends_on:
+      - redis
+      - postgres
+      - elasticsearch
+    env_file:
+      - .env
+
 volumes:
   postgres_data:
   redis_data:
