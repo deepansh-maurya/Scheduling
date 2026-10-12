@@ -9,11 +9,17 @@ import {
   createMeetBookingForGuestService,
   getmeetingsFromProvidersAndSave,
   getOutlookMeetingsFromProviderAndSave,
-  getUserMeetingsService
+  getUserMeetingsService,
+  processResourceAndAnswer
 } from "./meeting.service";
 import { HTTPSTATUS } from "../../core/config/http.config";
 import { asyncHandler } from "../../core/middlewares/asyncHandler.middeware";
-import { CreateMeetingDto, MeetingIdDTO, MeetingTypeDto } from "../../core/database/dto/meeting.dto";
+import {
+  CreateMeetingDto,
+  MeetingIdDTO,
+  MeetingResourceDTO,
+  MeetingTypeDto
+} from "../../core/database/dto/meeting.dto";
 
 export const getUserMeetingsController = asyncHandlerAndValidation(
   MeetingTypeDto,
@@ -45,6 +51,32 @@ export const syncMeetings = asyncHandler(
     await getOutlookMeetingsFromProviderAndSave(userId);
     return res.status(HTTPSTATUS.OK).json({
       message: "Meetings synced successfully"
+    });
+  }
+);
+
+export const processResourceFile = asyncHandlerAndValidation(
+  MeetingResourceDTO,
+  "body",
+  async (req: Request, res: Response, meetingResourceDto) => {
+    const userId = req.user?.id as string;
+
+    const files = req.files as Express.Multer.File[];
+
+    const releventChunks = await processResourceAndAnswer(
+      userId,
+      meetingResourceDto,
+      files
+    );
+
+    //? process chunks
+    const answer = "";
+
+    return res.status(HTTPSTATUS.CREATED).json({
+      message: "Meeting scheduled successfully",
+      data: {
+        answer
+      }
     });
   }
 );

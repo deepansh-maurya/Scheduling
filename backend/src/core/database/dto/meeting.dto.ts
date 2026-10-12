@@ -46,3 +46,13 @@ export class MeetingTypeDto {
   @IsNotEmpty()
   meetingType: MeetingType;
 }
+
+export class MeetingResourceDTO {
+  @IsString()
+  @IsNotEmpty()
+  meetingId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  question: string;
+}

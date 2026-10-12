@@ -1,10 +1,8 @@
 import { Request, Response } from "express";
-import { HTTPSTATUS } from "../config/http.config";
-import { LoginDto, RegisterDto } from "../database/dto/auth.dto";
-import { asyncHandlerAndValidation } from "../middlewares/withValidation.middleware";
-import { loginService, registerService } from "../services/auth.service";
-
-//withValidation(RegisterDto, "body")();
+import { asyncHandlerAndValidation } from "../../core/middlewares/withValidation.middleware";
+import { LoginDto, RegisterDto } from "../../core/database/dto/auth.dto";
+import { loginService, registerService } from "./auth.service";
+import { HTTPSTATUS } from "../../core/config/http.config";
 
 export const registerController = asyncHandlerAndValidation(
   RegisterDto,

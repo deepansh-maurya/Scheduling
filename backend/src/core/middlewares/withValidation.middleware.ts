@@ -5,7 +5,7 @@ import { HTTPSTATUS } from "../config/http.config";
 import { ErrorCodeEnum } from "../enums/error-code.enum";
 import { asyncHandler } from "./asyncHandler.middeware";
 
-type ValidationSource = "body" | "params" | "query";
+type ValidationSource = "body" | "params" | "query" | "file";
 
 export function asyncHandlerAndValidation<T extends object>(
   dto: new () => T,

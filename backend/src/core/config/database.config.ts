@@ -1,6 +1,7 @@
 import "dotenv/config";
 import path from "path";
 import { DataSource } from "typeorm";
+import { Client } from "@elastic/elasticsearch";
 
 import { config } from "./app.config";
 
@@ -25,9 +26,7 @@ export const getDatabaseConfig = () => {
   });
 };
 
-// elasticsearch.client.ts
 
-import { Client } from "@elastic/elasticsearch";
 
 export const elasticsearch = new Client({
   node: process.env.ELASTICSEARCH_URL ?? "http://localhost:9200",

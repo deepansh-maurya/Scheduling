@@ -1,4 +1,7 @@
 import { LessThan, MoreThan } from "typeorm";
+import Tesseract from "tesseract.js";
+import { randomUUID } from "node:crypto";
+
 import ollama from "ollama";
 import axios from "axios";
 import {
@@ -14,7 +17,10 @@ import {
   MeetingStatus,
   MeetingType
 } from "../../core/database/entities/meeting.entity";
-import { AppDataSource } from "../../core/config/database.config";
+import {
+  AppDataSource,
+  elasticsearch
+} from "../../core/config/database.config";
 import {
   Integration,
   IntegrationAppTypeEnum,
@@ -23,7 +29,10 @@ import {
 import { User } from "../../core/database/entities/user.entity";
 import { googleOAuth2Client } from "../../core/config/oauth.config";
 import { google } from "googleapis";
-import { CreateMeetingDto } from "../../core/database/dto/meeting.dto";
+import {
+  CreateMeetingDto,
+  MeetingResourceDTO
+} from "../../core/database/dto/meeting.dto";
 import {
   Event,
   EventLocationEnumType
@@ -34,6 +43,7 @@ import {
 } from "../../core/utils/app-error";
 import { TranscriptChunk } from "../../core/database/entities/transcript-chunk.entity";
 import { redisClient } from "../../core/config/redis.config";
+import { TemporaryUploadPayload } from "../../core/workers/resrouce-process.worker";
 
 export const getUserMeetingsService = async (
   userId: string,
@@ -674,4 +684,184 @@ async function getCalendarClient(
         `Unsupported Calendar provider: ${appType}`
       );
   }
+}
+
+export async function processResourceAndAnswer(
+  userId: string,
+  meetingResourceDto: MeetingResourceDTO,
+  files: Express.Multer.File[]
+) {
+  const { meetingId, question } = meetingResourceDto;
+
+  const uploadId = randomUUID();
+  const redisKey = `temporary-resource:${userId}:${uploadId}`;
+
+  const fileContent: {
+    fileName: string;
+    mimeType: string;
+    extractedText: string;
+  }[] = [];
+
+  const extractedTexts = await Promise.all(
+    files.map(async (file) => {
+      if (file.mimetype === "text/plain") {
+        const text = file.buffer.toString("utf-8");
+
+        fileContent.push({
+          extractedText: text,
+          mimeType: file.mimetype,
+          fileName: file.filename
+        });
+        return text;
+      }
+
+      if (file.mimetype.startsWith("image/")) {
+        const result = await Tesseract.recognize(file.buffer, "eng");
+        const text = result.data.text;
+
+        fileContent.push({
+          extractedText: text,
+          mimeType: file.mimetype,
+          fileName: file.filename
+        });
+        return text;
+      }
+
+      throw new Error(`Unsupported file type: ${file.mimetype}`);
+    })
+  );
+
+  const payload: TemporaryUploadPayload = {
+    meetingId,
+    uploadId,
+    userId,
+    files: fileContent
+  };
+
+  const payloadKey = `resource:temporary:${payload.uploadId}`;
+
+  await redisClient.set(payloadKey, JSON.stringify(payload), { EX: 3600 });
+
+  await redisClient.xAdd("resource_processing", "*", {
+    uploadId: payload.uploadId,
+    payloadKey,
+    userId: payload.userId,
+    meetingId
+  });
+
+  const passages = extractedTexts.flatMap((text) => splitTextIntoChunks(text));
+
+  if (!passages.length) {
+    throw new Error("No searchable text could be extracted");
+  }
+
+  await redisClient.set(redisKey, JSON.stringify(passages));
+
+  const storedPassages = await redisClient.get(redisKey);
+
+  if (!storedPassages) {
+    throw new Error("Temporary resource data expired");
+  }
+
+  const relevantPassages = searchBM25({
+    uploadId,
+    userId,
+    passages: JSON.parse(storedPassages) as string[],
+    question,
+    topK: 5
+  });
+
+  return {
+    uploadId,
+    meetingId,
+    relevantPassages
+  };
+}
+
+export function splitTextIntoChunks(
+  text: string,
+  chunkSize = 1000,
+  overlap = 150
+): string[] {
+  const normalizedText = text.replace(/\s+/g, " ").trim();
+
+  if (!normalizedText) return [];
+
+  if (overlap >= chunkSize) {
+    throw new Error("Overlap must be smaller than chunkSize");
+  }
+
+  const chunks: string[] = [];
+  let start = 0;
+
+  while (start < normalizedText.length) {
+    const end = Math.min(start + chunkSize, normalizedText.length);
+    chunks.push(normalizedText.slice(start, end));
+
+    if (end === normalizedText.length) break;
+
+    start = end - overlap;
+  }
+
+  return chunks;
+}
+
+interface SearchBM25Params {
+  uploadId: string;
+  userId: string;
+  passages: string[];
+  question: string;
+  topK?: number;
+}
+
+export async function searchBM25({
+  uploadId,
+  userId,
+  passages,
+  question,
+  topK = 5
+}: SearchBM25Params): Promise<string[]> {
+  const indexName = "meetly_temporary";
+
+  const operations = passages.flatMap((content, i) => [
+    {
+      index: {
+        _index: indexName,
+        _id: `${uploadId}-${i}`
+      }
+    },
+    {
+      uploadId,
+      userId,
+      content
+    }
+  ]);
+
+  if (operations.length > 0) {
+    const bulkResult = await elasticsearch.bulk({
+      operations,
+      refresh: true
+    });
+
+    if (bulkResult.errors) {
+      throw new Error("Failed to index some temporary passages");
+    }
+  }
+
+  const result = await elasticsearch.search({
+    index: indexName,
+    size: topK,
+    query: {
+      bool: {
+        filter: [{ term: { uploadId } }, { term: { userId } }],
+        must: [{ match: { content: question } }]
+      }
+    }
+  });
+
+  return result.hits.hits.flatMap((hit) => {
+    const source = hit._source as { content?: string } | undefined;
+
+    return source?.content ? [source.content] : [];
+  });
 }
