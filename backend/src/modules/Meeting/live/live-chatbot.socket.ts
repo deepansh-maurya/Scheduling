@@ -9,6 +9,7 @@ import { Meeting } from "../../../core/database/entities/meeting.entity";
 import { Llm, LlmMessage } from "../../../core/config/nvidia.config";
 import { meetingPrompt } from "../../../core/Prompts/meeting.prompt";
 import { redisClient } from "../../../core/config/redis.config";
+import { ResourceChunk } from "../../../core/database/entities/resource-chunks.entity";
 
 interface Message {
   question: string;
@@ -25,7 +26,7 @@ wsChatbot.on(
       ws.on("message", async (raw: RawData) => {
         const data: Message = JSON.parse(raw.toString());
         const chunkRepo = AppDataSource.getRepository(TranscriptChunk);
-
+        const reourceChunkRepo = AppDataSource.getRepository(ResourceChunk);
         const response = await ollama.embed({
           model: "nomic-embed-text",
           input: data.question
@@ -44,13 +45,20 @@ wsChatbot.on(
           .setParameter("embedding", JSON.stringify(embedding))
           .getRawMany();
 
-        const transcript = results?.map((r) => r).join("\n");
+        const chunks = await reourceChunkRepo
+          .createQueryBuilder("chunk")
+          .addSelect("chunk.embedding <=> :embedding::vector", "distance")
+          .innerJoin("chunk.resource", "resource")
+          .where("resource.meetingId = :meetingId", { meetingId })
+          .andWhere("resource.userId = :userId", { userId: user.id })
+          .orderBy("distance", "ASC")
+          .limit(5)
+          .setParameter("embedding", JSON.stringify(embedding))
+          .getRawMany();
 
-        const segments = await redisClient.lRange(
-          `transcript:${user.id}:${meetingId}`,
-          0,
-          59
-        );
+        const texts: string[] = chunks.map((chunk) => chunk.content);
+
+        const transcript = results?.map((r) => r).join("\n");
 
         const message: LlmMessage[] = [
           {
@@ -58,14 +66,8 @@ wsChatbot.on(
             content: meetingPrompt({
               MEETING_CONTEXT: JSON.stringify(meeting),
               USER_QUESTION: data.question,
-              FILES_CONTEXT: data.files,
               RETRIEVED_TRANSCRIPT: transcript,
-              RECENT_TRANSCRIPT: segments
-                ?.map(
-                  (c: any) =>
-                    `${c.timstamp} [${c.channelString}] ${c.transcript}`
-                )
-                .join("\n")
+              UPLOADED_RESOURCE_CHUNK:[...texts]
             })
           }
         ];

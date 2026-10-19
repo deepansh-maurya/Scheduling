@@ -11,7 +11,8 @@
     "db:generate": "npm run typeorm -- migration:generate ./src/core/database/migrations/UpdateMeeting_Table",
     "db:migrate": "npm run typeorm -- migration:run",
     "db:revert": "npm run typeorm -- migration:revert",
-    "db:drop": "npm run typeorm -- schema:drop"
+    "db:drop": "npm run typeorm -- schema:drop",
+    "worker": "concurrently \"node ./src/core/workers/resrouce-process.worker.ts\" \"npm run client\""
   },
   "keywords": [],
   "author": "",
@@ -56,6 +57,7 @@
     "@types/node": "^22.13.4",
     "@types/passport": "^1.0.17",
     "@types/passport-jwt": "^4.0.1",
+    "concurrently": "^10.0.6",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.7.3"
   }

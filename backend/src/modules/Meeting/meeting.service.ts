@@ -766,12 +766,15 @@ export async function processResourceAndAnswer(
 
   await redisClient.sAdd(`user:${userId}:uploads`, uploadId);
 
+  await indexTemporaryPassages({ uploadId, userId, meetingId, passages });
+
   const relevantPassages = await searchBM25({
     uploadId,
     userId,
     passages: passages as string[],
     question,
-    topK: 5
+    topK: 5,
+    meetingId
   });
 
   return {
@@ -872,18 +875,35 @@ interface SearchBM25Params {
   uploadId: string;
   userId: string;
   passages: string[];
+  meetingId: string;
   question: string;
   topK?: number;
 }
 
-export async function searchBM25({
+interface SearchBM25Params {
+  uploadId: string;
+  userId: string;
+  meetingId: string;
+  question: string;
+  topK?: number;
+}
+
+interface IndexTemporaryPassagesParams {
+  uploadId: string;
+  userId: string;
+  meetingId: string;
+  passages: string[];
+}
+
+export async function indexTemporaryPassages({
   uploadId,
   userId,
-  passages,
-  question,
-  topK = 5
-}: SearchBM25Params): Promise<string[]> {
+  meetingId,
+  passages
+}: IndexTemporaryPassagesParams): Promise<void> {
   const indexName = "meetly_temporary";
+
+  if (passages.length === 0) return;
 
   const operations = passages.flatMap((content, i) => [
     {
@@ -895,27 +915,38 @@ export async function searchBM25({
     {
       uploadId,
       userId,
+      meetingId,
       content
     }
   ]);
 
-  if (operations.length > 0) {
-    const bulkResult = await elasticsearch.bulk({
-      operations,
-      refresh: true
-    });
+  const bulkResult = await elasticsearch.bulk({
+    operations,
+    refresh: true
+  });
 
-    if (bulkResult.errors) {
-      throw new Error("Failed to index some temporary passages");
-    }
+  if (bulkResult.errors) {
+    throw new Error("Failed to index some temporary passages");
   }
+}
 
+export async function searchBM25({
+  uploadId,
+  userId,
+  meetingId,
+  question,
+  topK = 5
+}: SearchBM25Params): Promise<string[]> {
   const result = await elasticsearch.search({
-    index: indexName,
+    index: "meetly_temporary",
     size: topK,
     query: {
       bool: {
-        filter: [{ term: { uploadId } }, { term: { userId } }],
+        filter: [
+          { term: { uploadId } },
+          { term: { userId } },
+          { term: { meetingId } }
+        ],
         must: [{ match: { content: question } }]
       }
     }
