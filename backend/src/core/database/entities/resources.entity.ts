@@ -7,7 +7,8 @@ import {
 } from "typeorm";
 
 export enum ResourceType {
-  TXT = "TXT"
+  TXT = "TXT",
+  IMAGE = "IMAGE"
 }
 
 @Entity({ name: "resources" })
@@ -35,6 +36,9 @@ export class Resource {
 
   @Column({ type: "varchar", nullable: true })
   mimeType: string | null;
+
+  @Column({ type: "varchar", nullable: true })
+  resourceTxt: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

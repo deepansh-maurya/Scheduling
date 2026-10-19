@@ -18,7 +18,7 @@ export class ResourceChunk {
     onDelete: "CASCADE"
   })
   @JoinColumn({ name: "resourceId" })
-  resource: Resource;
+  resource: Resource; 
 
   @Column({ type: "uuid" })
   resourceId: string;

@@ -42,8 +42,16 @@ import {
   NotFoundException
 } from "../../core/utils/app-error";
 import { TranscriptChunk } from "../../core/database/entities/transcript-chunk.entity";
-import { redisClient } from "../../core/config/redis.config";
-import { TemporaryUploadPayload } from "../../core/workers/resrouce-process.worker";
+import { redisClient, resourceQueue } from "../../core/config/redis.config";
+import { uploadToMinio } from "../../core/services/core.services";
+import {
+  Resource,
+  ResourceType
+} from "../../core/database/entities/resources.entity";
+import {
+  ResourceProcessingJob,
+  ResourceProcessingStatus
+} from "../../core/database/entities/resource-processing-jobs.entity";
 
 export const getUserMeetingsService = async (
   userId: string,
@@ -694,7 +702,6 @@ export async function processResourceAndAnswer(
   const { meetingId, question } = meetingResourceDto;
 
   const uploadId = randomUUID();
-  const redisKey = `temporary-resource:${userId}:${uploadId}`;
 
   const fileContent: {
     fileName: string;
@@ -710,8 +717,18 @@ export async function processResourceAndAnswer(
         fileContent.push({
           extractedText: text,
           mimeType: file.mimetype,
-          fileName: file.filename
+          fileName: file.originalname
         });
+
+        await uploadToMinioAndSaveLog(
+          userId,
+          file,
+          meetingId,
+          text,
+          false,
+          ResourceType.TXT
+        );
+
         return text;
       }
 
@@ -722,8 +739,18 @@ export async function processResourceAndAnswer(
         fileContent.push({
           extractedText: text,
           mimeType: file.mimetype,
-          fileName: file.filename
+          fileName: file.originalname
         });
+
+        await uploadToMinioAndSaveLog(
+          userId,
+          file,
+          meetingId,
+          text,
+          true,
+          ResourceType.IMAGE
+        );
+
         return text;
       }
 
@@ -731,42 +758,18 @@ export async function processResourceAndAnswer(
     })
   );
 
-  const payload: TemporaryUploadPayload = {
-    meetingId,
-    uploadId,
-    userId,
-    files: fileContent
-  };
-
-  const payloadKey = `resource:temporary:${payload.uploadId}`;
-
-  await redisClient.set(payloadKey, JSON.stringify(payload), { EX: 3600 });
-
-  await redisClient.xAdd("resource_processing", "*", {
-    uploadId: payload.uploadId,
-    payloadKey,
-    userId: payload.userId,
-    meetingId
-  });
-
   const passages = extractedTexts.flatMap((text) => splitTextIntoChunks(text));
 
   if (!passages.length) {
     throw new Error("No searchable text could be extracted");
   }
 
-  await redisClient.set(redisKey, JSON.stringify(passages));
+  await redisClient.sAdd(`user:${userId}:uploads`, uploadId);
 
-  const storedPassages = await redisClient.get(redisKey);
-
-  if (!storedPassages) {
-    throw new Error("Temporary resource data expired");
-  }
-
-  const relevantPassages = searchBM25({
+  const relevantPassages = await searchBM25({
     uploadId,
     userId,
-    passages: JSON.parse(storedPassages) as string[],
+    passages: passages as string[],
     question,
     topK: 5
   });
@@ -804,6 +807,65 @@ export function splitTextIntoChunks(
   }
 
   return chunks;
+}
+
+export async function uploadToMinioAndSaveLog(
+  userId: string,
+  file: Express.Multer.File,
+  meetingId: string,
+  text: string,
+  storeTxt: boolean,
+  type: string
+) {
+  const resourceRepo = AppDataSource.getRepository(Resource);
+  const resourceJobRepo = AppDataSource.getRepository(ResourceProcessingJob);
+
+  const resp = await uploadToMinio(userId, file, meetingId);
+
+  const resource = resourceRepo.create({
+    fileName: file.originalname,
+    meetingId: meetingId,
+    mimeType: file.mimetype,
+    type: type as any,
+    userId: userId,
+    storageKey: resp.objectKey,
+    resourceTxt: storeTxt ? text : null
+  });
+
+  await resourceRepo.save(resource);
+
+  const resourceJob = resourceJobRepo.create({
+    file_id: resource.id,
+    meeting_id: meetingId,
+    file_type: file.mimetype,
+    raw_minio_key: resp.objectKey,
+    text_minio_key: null,
+    status: ResourceProcessingStatus.PENDING,
+    attempts: 0
+  });
+
+  await resourceJobRepo.save(resourceJob);
+
+  await resourceQueue.add(
+    "process-file",
+    {
+      fileId: resource.id,
+      userId,
+      meetingId,
+      fileType: file.mimetype,
+      minioKey: resp.objectKey
+    },
+    {
+      jobId: resource.id,
+      attempts: 3,
+      backoff: {
+        type: "exponential",
+        delay: 2000
+      },
+      removeOnComplete: true,
+      removeOnFail: false
+    }
+  );
 }
 
 interface SearchBM25Params {

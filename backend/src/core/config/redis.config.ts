@@ -1,4 +1,5 @@
 import { createClient } from "redis";
+import { Queue } from "bullmq";
 
 export const redisClient = createClient({
   url: process.env.REDIS_URL
@@ -18,3 +19,7 @@ export const connectRedis = async () => {
   await redisClient.connect();
   await redisPubSub.connect();
 };
+
+export const resourceQueue = new Queue("meeting-resources", {
+  connection: redisClient
+});

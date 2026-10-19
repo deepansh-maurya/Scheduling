@@ -233,19 +233,19 @@ class TranscriptProcessWorker {
     }
   }
 
-  cosineSimilarity(a: number[], b: number[]) {
-    let dot = 0;
-    let normA = 0;
-    let normB = 0;
+    cosineSimilarity(a: number[], b: number[]) {
+      let dot = 0;
+      let normA = 0;
+      let normB = 0;
 
-    for (let i = 0; i < a.length; i++) {
-      dot += a[i] * b[i];
-      normA += a[i] ** 2;
-      normB += b[i] ** 2;
+      for (let i = 0; i < a.length; i++) {
+        dot += a[i] * b[i];
+        normA += a[i] ** 2;
+        normB += b[i] ** 2;
+      }
+
+      return dot / (Math.sqrt(normA) * Math.sqrt(normB));
     }
-
-    return dot / (Math.sqrt(normA) * Math.sqrt(normB));
-  }
 
   stop() {
     this.shouldStop = true;
