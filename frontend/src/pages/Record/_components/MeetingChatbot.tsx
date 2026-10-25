@@ -1,9 +1,21 @@
 import { ArrowUp, Maximize2, Mic, Paperclip, Sparkles, X } from "lucide-react";
 import { useState } from "react";
+import { Chat } from "..";
 
-const MeetingChatbot = ({ onClose }: { onClose: () => void }) => {
+const MeetingChatbot = ({
+  onClose,
+  chatbotRef,
+  chat,
+  setChat
+}: {
+  onClose: () => void;
+  chatbotRef: React.RefObject<WebSocket | null>;
+  chat: Chat[];
+  setChat: React.Dispatch<React.SetStateAction<Chat[]>>;
+}) => {
   const [width, setWidth] = useState(420);
   const [height, setHeight] = useState(430);
+  const [value, setValue] = useState("");
 
   const startResizeLeft = (e: React.PointerEvent) => {
     e.preventDefault();
@@ -45,6 +57,28 @@ const MeetingChatbot = ({ onClose }: { onClose: () => void }) => {
 
     window.addEventListener("pointermove", handleMove);
     window.addEventListener("pointerup", handleUp);
+  };
+
+  const handleChat = () => {
+    try {
+      const userMessage: Chat = {
+        author: "user",
+        id: Math.random().toString(),
+        message: value
+      };
+
+      console.log(userMessage)
+
+      setChat((chat) => {
+        return [...chat, userMessage];
+      });
+
+      setValue("");
+
+      chatbotRef.current?.send(JSON.stringify({ question: value }));
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (
@@ -134,34 +168,33 @@ const MeetingChatbot = ({ onClose }: { onClose: () => void }) => {
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         <div className="flex flex-col gap-4">
-          <div className="max-w-[85%]">
-            <p className="mb-1 text-[11px] font-medium text-gray-400">
-              Assistant
-            </p>
+          {Array.isArray(chat) && chat.length > 0 ? (
+            chat.map((c) => {
+              return (
+                <>
+                  {c.author == "system" ? (
+                    <div className="max-w-[85%]">
+                      <p className="mb-1 text-[11px] font-medium text-gray-400">
+                        Assistant
+                      </p>
 
-            <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-sm leading-5 text-gray-700">
-              I can answer questions about the meeting, transcript, decisions,
-              action items, and shared screen.
-            </div>
-          </div>
-
-          <div className="ml-auto max-w-[80%]">
-            <div className="rounded-xl bg-blue-50 px-3 py-2.5 text-sm leading-5 text-gray-700">
-              What were the main decisions?
-            </div>
-          </div>
-
-          <div className="max-w-[85%]">
-            <p className="mb-1 text-[11px] font-medium text-gray-400">
-              Assistant
-            </p>
-
-            <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-sm leading-5 text-gray-700">
-              The team agreed to move forward with the new authentication
-              architecture and review the integration changes before the next
-              meeting.
-            </div>
-          </div>
+                      <div className="rounded-xl bg-gray-50 px-3 py-2.5 text-sm leading-5 text-gray-700">
+                        {c.message}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="ml-auto max-w-[80%]">
+                      <div className="rounded-xl bg-blue-50 px-3 py-2.5 text-sm leading-5 text-gray-700">
+                      {c.message}
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })
+          ) : (
+            <div>No chat messages</div>
+          )}
         </div>
       </div>
 
@@ -186,6 +219,8 @@ const MeetingChatbot = ({ onClose }: { onClose: () => void }) => {
           <textarea
             placeholder="Ask about this meeting..."
             rows={2}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
             className="
               w-full
               resize-none
@@ -210,7 +245,10 @@ const MeetingChatbot = ({ onClose }: { onClose: () => void }) => {
               </button>
             </div>
 
-            <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-black text-white hover:bg-gray-800">
+            <button
+              onClick={handleChat}
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-black text-white hover:bg-gray-800"
+            >
               <ArrowUp size={16} />
             </button>
           </div>

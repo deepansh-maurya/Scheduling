@@ -12,14 +12,22 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Socket } from "@/lib/socket";
 import { toast } from "sonner";
 import getudioVideo from "@/lib/audio-video";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { Chatbot } from "./_api/chatbotCon";
 
 interface Transcript {
   channel: number;
   transcript: string;
 }
 
+export interface Chat {
+  id: string;
+  author: "system" | "user";
+  message: string;
+}
+
 const Record = () => {
+  const { id } = useParams<{ id: string }>();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showBot, setShowBot] = useState(false);
   const [pause, setPause] = useState(false);
@@ -30,6 +38,8 @@ const Record = () => {
   const channelledAudioRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
+  const chatBotRef = useRef<WebSocket | null>(null);
+  const [chat, setChat] = useState<Chat[]>([]);
   const nav = useNavigate();
 
   console.log(transcript);
@@ -127,6 +137,35 @@ const Record = () => {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
+  }, []);
+
+  const connectBot = async () => {
+    try {
+      chatBotRef.current = await Chatbot.connect(id!);
+
+      chatBotRef.current.onmessage = (event: MessageEvent<string>) => {
+        const data: string = event.data;
+        const parsedData: any = JSON.parse(data);
+
+        setChat((chat) => {
+          return [
+            ...chat,
+            {
+              author: "system",
+              id: Math.random().toString(),
+              message: parsedData?.llmResponse
+            }
+          ];
+        });
+        console.log(parsedData);
+      };
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    connectBot();
   }, []);
 
   return (
@@ -279,6 +318,9 @@ const Record = () => {
       </button>
       {showBot && (
         <MeetingChatbot
+          setChat={setChat}
+          chat={chat}
+          chatbotRef={chatBotRef}
           onClose={() => {
             setShowBot(!showBot);
           }}

@@ -19,6 +19,8 @@ wsChatbot.on(
   "connection",
   async (ws: WebSocket, _: IncomingMessage, user: User, meetingId: string) => {
     try {
+      console.log("connection reqeust");
+
       const meetingRepo = AppDataSource.getRepository(Meeting);
       const meeting = await meetingRepo.findOne({ where: { id: meetingId } });
 
@@ -30,6 +32,8 @@ wsChatbot.on(
           model: "nomic-embed-text",
           input: data.question
         });
+
+        console.log(data, "recieved data");
 
         const embedding = response.embeddings[0];
 

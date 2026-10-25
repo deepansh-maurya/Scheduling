@@ -13,7 +13,7 @@ import eventRoutes from "./modules/Event/event.route";
 import availabilityRoutes from "./modules/Event/availability.route";
 import meetingRoutes from "./modules/Meeting/meeting.route";
 import { createServer } from "http";
-import { wsLiveMeet } from "./core/config/socket.config";
+import { wsChatbot, wsLiveMeet } from "./core/config/socket.config";
 import { authenticateWebSocket } from "./core/config/auth.config";
 import { connectRedis, connectRedisPubSub } from "./core/config/redis.config";
 import { AppDataSource } from "./core/config/database.config";
@@ -22,6 +22,8 @@ import {
   MeetingStatus
 } from "./core/database/entities/meeting.entity";
 import "./modules/Meeting/live/live-meeting.socket";
+import "./modules/Meeting/live/live-chatbot.socket";
+
 import integrationRoutes from "./modules/Integration/integration.route";
 
 const app = express();
@@ -101,7 +103,10 @@ server.on("upgrade", async (request, socket, head) => {
       where: { id: meetingId }
     });
 
-    if (isMeetingAvail?.status != "SCHEDULED") {
+    if (
+      isMeetingAvail?.status != MeetingStatus.SCHEDULED &&
+      isMeetingAvail?.status != MeetingStatus.IN_PROGRESS
+    ) {
       socket.write(
         "HTTP/1.1 403 Forbidden\r\n" +
           "Content-Type: application/json\r\n" +
@@ -127,8 +132,13 @@ server.on("upgrade", async (request, socket, head) => {
     }
 
     if (pathname.startsWith("/ws/live-chatbot")) {
-      wsLiveMeet.handleUpgrade(request, socket, head, (ws) => {
-        wsLiveMeet.emit("connection", ws, request, user, meetingId);
+      console.log("bot connection request");
+      console.log(
+        "[UPGRADE] wsChatbot listeners:",
+        wsChatbot.listenerCount("connection")
+      );
+      wsChatbot.handleUpgrade(request, socket, head, (ws) => {
+        wsChatbot.emit("connection", ws, request, user, meetingId);
       });
     }
   } catch (error) {
@@ -139,6 +149,7 @@ server.on("upgrade", async (request, socket, head) => {
 
 server.listen(config.PORT, async () => {
   await initializeDatabase();
-  (await connectRedis(), connectRedisPubSub());
+  await connectRedis();
+  await connectRedisPubSub();
   console.log(`Server listening on port ${config.PORT} in ${config.NODE_ENV}`);
 });

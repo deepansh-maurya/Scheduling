@@ -51,8 +51,16 @@ export const syncMeetings = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = req.user?.id as string;
 
-    await getmeetingsFromProvidersAndSave(userId);
-    await getOutlookMeetingsFromProviderAndSave(userId);
+    try {
+      await getmeetingsFromProvidersAndSave(userId);
+    } catch (error) {
+      console.log(error);
+    }
+    try {
+      await getOutlookMeetingsFromProviderAndSave(userId);
+    } catch (error) {
+      console.log(error);
+    }
     return res.status(HTTPSTATUS.OK).json({
       message: "Meetings synced successfully"
     });
