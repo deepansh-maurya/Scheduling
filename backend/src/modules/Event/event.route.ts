@@ -6,7 +6,7 @@ import {
   getPublicEventsByUsernameController,
   getUserEventsController,
   toggleEventPrivacyController
-} from "../controllers/event.controller";
+} from "./event.controller";
 import { httpAuthenticate } from "../../core/config/auth.config";
 
 const eventRoutes = Router();

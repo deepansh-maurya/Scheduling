@@ -33,24 +33,34 @@ services:
       - elasticsearch_data:/usr/share/elasticsearch/data
 
   transcript-worker:
+    image: meetly-backend:dev
     build: .
-    command: npx ts-node src/workers/transcript.worker.ts
+    command: npx ts-node src/core/workers/transcript-process.worker.ts
     depends_on:
       - redis
       - postgres
       - elasticsearch
     env_file:
       - .env
+    environment:
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - ./src:/app/src
 
   resource-process-worker:
+    image: meetly-backend:dev
     build: .
-    command: npx ts-node src/workers/resource-process.worker.ts
+    command: npx ts-node src/core/workers/resource-process.worker.ts
     depends_on:
       - redis
       - postgres
       - elasticsearch
     env_file:
       - .env
+    environment:
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - ./src:/app/src
 
   minio:
     image: minio/minio:latest

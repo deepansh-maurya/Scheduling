@@ -42,7 +42,7 @@ import {
   NotFoundException
 } from "../../core/utils/app-error";
 import { TranscriptChunk } from "../../core/database/entities/transcript-chunk.entity";
-import { redisClient, resourceQueue } from "../../core/config/redis.config";
+import { redisClient } from "../../core/config/redis.config";
 import { uploadToMinio } from "../../core/services/core.services";
 import {
   Resource,
@@ -52,6 +52,7 @@ import {
   ResourceProcessingJob,
   ResourceProcessingStatus
 } from "../../core/database/entities/resource-processing-jobs.entity";
+import { resourceQueue } from "../../core/config/bullmq.config";
 
 export const getUserMeetingsService = async (
   userId: string,

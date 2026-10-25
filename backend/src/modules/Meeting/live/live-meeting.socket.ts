@@ -1,7 +1,7 @@
 import { IncomingMessage } from "node:http";
 import { redisClient, redisPubSub } from "../../../core/config/redis.config";
 import { wsLiveMeet } from "../../../core/config/socket.config";
-import { deepgramConnection } from "./deepgram.provider";
+import { deepgramConnection, dEvents } from "./deepgram.provider";
 import { User } from "../../../core/database/entities/user.entity";
 import { RawData, WebSocket } from "ws";
 import { PubSubEnum } from "../../../core/enums/live-meet-con.enum";
@@ -12,12 +12,10 @@ wsLiveMeet.on(
   "connection",
   async (ws: WebSocket, _: IncomingMessage, user: User, meetingId: string) => {
     try {
-      const dgConnection = await deepgramConnection();
-
-      dgConnection.on("open", () => {
+      dEvents.on("open", async () => {
         console.log("dg connected");
-
-        redisPubSub.publish(
+        console.log("event published live meet");
+        const subscribers = await redisPubSub.publish(
           PubSubEnum.START,
           JSON.stringify({
             type: "START",
@@ -25,23 +23,17 @@ wsLiveMeet.on(
             userId: user.id
           })
         );
+
+        console.log("START published; subscribers:", subscribers);
       });
 
-      dgConnection.on("message", async (data: any) => {
+      dEvents.on("message", async (data: any) => {
         if (data.type === "Results" && data.channel?.alternatives?.[0]) {
           const alternative = data.channel.alternatives[0];
-          console.log(alternative);
           const transcript = alternative.transcript;
           const channel = data.channel_index?.[0];
           const start = alternative?.words?.[0]?.start;
           const end = alternative?.words?.[alternative?.words?.length - 1]?.end;
-
-          console.log({
-            start,
-            end,
-            transcript,
-            channel
-          });
 
           if (transcript && data.is_final) {
             const key = `transcript:${user.id}:${meetingId}`;
@@ -52,7 +44,7 @@ wsLiveMeet.on(
               start: String(start),
               end: String(end)
             });
-
+            console.log("event sent");
             ws.send(
               JSON.stringify({
                 channel,
@@ -63,8 +55,10 @@ wsLiveMeet.on(
         }
       });
 
+      const deepgramClient = await deepgramConnection();
+
       ws.on("message", (raw: RawData, isBinary: boolean) => {
-        if (isBinary) dgConnection.sendMedia(raw);
+        if (isBinary) deepgramClient?.sendMedia(raw);
       });
 
       ws.on("close", () => {
@@ -76,10 +70,10 @@ wsLiveMeet.on(
             userId: user.id
           })
         );
-        dgConnection.close();
+        deepgramClient.close();
       });
 
-      dgConnection.on("error", (err: any) => {
+      dEvents.on("error", (err: any) => {
         console.error("Deepgram error:", err);
 
         if (ws.readyState === ws.OPEN) {

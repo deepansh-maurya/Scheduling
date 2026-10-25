@@ -1,4 +1,7 @@
 import { DeepgramClient } from "@deepgram/sdk";
+import { EventEmitter } from "node:events";
+
+export const dEvents = new EventEmitter();
 
 export const deepgramConnection = async (): Promise<any> => {
   const deepgram = new DeepgramClient({
@@ -13,8 +16,17 @@ export const deepgramConnection = async (): Promise<any> => {
     multichannel: "true"
   });
 
-  socket.on("error", (err: any) => {
-    console.error("Deepgram error:", err);
+  socket.on("open", () => {
+    dEvents.emit("open", "");
+  });
+  socket.on("message", (data) => {
+    dEvents.emit("message", data);
+  });
+  socket.on("error", (error) => {
+    dEvents.emit("error", error);
+  });
+  socket.on("close", () => {
+    dEvents.emit("close", "");  
   });
 
   socket.connect();

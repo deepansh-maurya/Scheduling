@@ -15,7 +15,7 @@ import meetingRoutes from "./modules/Meeting/meeting.route";
 import { createServer } from "http";
 import { wsLiveMeet } from "./core/config/socket.config";
 import { authenticateWebSocket } from "./core/config/auth.config";
-import { connectRedis } from "./core/config/redis.config";
+import { connectRedis, connectRedisPubSub } from "./core/config/redis.config";
 import { AppDataSource } from "./core/config/database.config";
 import {
   Meeting,
@@ -139,6 +139,6 @@ server.on("upgrade", async (request, socket, head) => {
 
 server.listen(config.PORT, async () => {
   await initializeDatabase();
-  await connectRedis();
+  (await connectRedis(), connectRedisPubSub());
   console.log(`Server listening on port ${config.PORT} in ${config.NODE_ENV}`);
 });

@@ -8,7 +8,6 @@ import ollama from "ollama";
 import { Meeting } from "../../../core/database/entities/meeting.entity";
 import { Llm, LlmMessage } from "../../../core/config/nvidia.config";
 import { meetingPrompt } from "../../../core/Prompts/meeting.prompt";
-import { redisClient } from "../../../core/config/redis.config";
 import { ResourceChunk } from "../../../core/database/entities/resource-chunks.entity";
 
 interface Message {
@@ -67,13 +66,14 @@ wsChatbot.on(
               MEETING_CONTEXT: JSON.stringify(meeting),
               USER_QUESTION: data.question,
               RETRIEVED_TRANSCRIPT: transcript,
-              UPLOADED_RESOURCE_CHUNK:[...texts]
+              UPLOADED_RESOURCE_CHUNK: [...texts]
             })
           }
         ];
 
         const llmResponse = await Llm.call(message);
         console.log(llmResponse);
+        ws.send(JSON.stringify({ llmResponse }));
       });
     } catch (err: any) {
       if (ws.readyState === ws.OPEN) {

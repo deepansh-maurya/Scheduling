@@ -1,14 +1,10 @@
 import { Request, Response } from "express";
-import { asyncHandler } from "../middlewares/asyncHandler.middeware";
-import { HTTPSTATUS } from "../config/http.config";
-import {
-  getAvailabilityForPublicEventService,
-  getUserAvailabilityService,
-  updateAvailabilityService,
-} from "../services/availability.service";
-import { asyncHandlerAndValidation } from "../middlewares/withValidation.middleware";
-import { UpdateAvailabilityDto } from "../database/dto/availability.dto";
-import { EventIdDTO } from "../database/dto/event.dto";
+import { asyncHandler } from "../../core/middlewares/asyncHandler.middeware";
+import { getAvailabilityForPublicEventService, getUserAvailabilityService, updateAvailabilityService } from "./availability.service";
+import { HTTPSTATUS } from "../../core/config/http.config";
+import { asyncHandlerAndValidation } from "../../core/middlewares/withValidation.middleware";
+import { UpdateAvailabilityDto } from "../../core/database/dto/availability.dto";
+import { EventIdDTO } from "../../core/database/dto/event.dto";
 
 export const getUserAvailabilityController = asyncHandler(
   async (req: Request, res: Response) => {

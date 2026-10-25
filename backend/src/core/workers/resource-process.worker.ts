@@ -1,11 +1,11 @@
 import { Job, Worker } from "bullmq";
 import ollama from "ollama";
-import { redisClient } from "../config/redis.config";
 import { AppDataSource } from "../config/database.config";
 import { Resource } from "../database/entities/resources.entity";
 import { ResourceChunk } from "../database/entities/resource-chunks.entity";
 import { minioClient } from "../config/minio.config";
 import { createInterface } from "node:readline";
+import { bullConnection } from "../config/bullmq.config";
 
 export const resourceWorker = new Worker(
   "process-file",
@@ -99,7 +99,7 @@ export const resourceWorker = new Worker(
     }
   },
   {
-    connection: redisClient,
+    connection: bullConnection,
     concurrency: 2
   }
 );

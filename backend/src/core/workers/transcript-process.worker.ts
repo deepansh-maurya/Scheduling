@@ -1,5 +1,10 @@
 import ollama from "ollama";
-import { redisClient, redisPubSub } from "../config/redis.config";
+import {
+  connectRedis,
+  connectRedisPubSub,
+  redisClient,
+  redisPubSub
+} from "../config/redis.config";
 import { PubSubEnum } from "../enums/live-meet-con.enum";
 import { DeepPartial, Repository } from "typeorm";
 import { AppDataSource, elasticsearch } from "../config/database.config";
@@ -12,21 +17,38 @@ interface Message {
 }
 
 class SubscribeMeetStart {
-  connections: Map<string, TranscriptProcessWorker>;
+  connections: Map<string, TranscriptProcessWorker> = new Map();
 
   constructor() {
-    redisPubSub.subscribe(PubSubEnum.START, async (message) => {
-      const { meetingId, userId } = JSON.parse(message) as Message;
-      const connection = new TranscriptProcessWorker(meetingId, userId);
-      this.connections.set(`${userId}:${meetingId}`, connection);
-    });
+    connectRedis()
+      .then(() => {
+        connectRedisPubSub()
+          .then(async () => {
+            if (!AppDataSource.isInitialized) {
+              await AppDataSource.initialize();
+            }
 
-    redisPubSub.subscribe(PubSubEnum.STOP, async (message) => {
-      const { meetingId, userId } = JSON.parse(message) as Message;
-      const connection = this.connections.get(`${userId}:${meetingId}`);
-      connection?.stop();
-      this.connections.delete(`${userId}:${meetingId}`);
-    });
+            redisPubSub.subscribe(PubSubEnum.START, async (message) => {
+              console.log("worker subscribed");
+              const { meetingId, userId } = JSON.parse(message) as Message;
+              const connection = new TranscriptProcessWorker(meetingId, userId);
+              this.connections.set(`${userId}:${meetingId}`, connection);
+            });
+
+            redisPubSub.subscribe(PubSubEnum.STOP, async (message) => {
+              const { meetingId, userId } = JSON.parse(message) as Message;
+              const connection = this.connections.get(`${userId}:${meetingId}`);
+              connection?.stop();
+              this.connections.delete(`${userId}:${meetingId}`);
+            });
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   }
 }
 
@@ -39,29 +61,31 @@ class TranscriptProcessWorker {
     this.meetingId = meetingId;
     this.userId = userId;
     this.streamAndProcess();
+    console.log("process worker ", meetingId, " ", userId);
   }
 
   async streamAndProcess() {
     try {
       const key = `transcript:${this.userId}:${this.meetingId}`;
+      console.log(key);
+
+      let windowGroup: {
+        chat: string;
+        embedding: number[] | null;
+        start: string;
+        end: string;
+        channel: string[];
+      }[] = [];
+
+      let currentWindow: {
+        start: string;
+        end: string;
+        channel: string;
+        chat: string;
+      }[] = [];
 
       while (!this.shouldStop) {
         let lastId = "0-0";
-
-        let windowGroup: {
-          chat: string;
-          embedding: number[] | null;
-          start: string;
-          end: string;
-          channel: string[];
-        }[] = [];
-
-        let currentWindow: {
-          start: string;
-          end: string;
-          channel: string;
-          chat: string;
-        }[] = [];
 
         try {
           const result = await redisClient.xRead(
@@ -90,46 +114,41 @@ class TranscriptProcessWorker {
               const { id, message } = data;
               const { channel, transcript, start, end } = message;
 
-              console.log(channel);
-              console.log(transcript);
-              console.log(start);
-
               currentWindow.push({ channel, start, end, chat: transcript });
 
               lastId = id;
-              await redisClient.xDel(key, message.id);
+              await redisClient.xDel(key, id);
             }
           }
 
-          if (currentWindow.length > 1) {
+          console.log(currentWindow.length, "currentwindow length");
+
+          if (currentWindow.length > 0) {
             if (windowGroup.length == 0) {
               windowGroup.push({
-                chat: currentWindow?.[0].chat + currentWindow?.[1].chat,
+                chat: currentWindow?.[0].chat,
                 embedding: null,
-                channel: [
-                  ...new Set([
-                    currentWindow[0].channel,
-                    currentWindow[1].channel
-                  ])
-                ],
-                end: currentWindow[1].end,
+                channel: [...new Set([currentWindow[0].channel])],
+                end: currentWindow[0].end,
                 start: currentWindow[0].start
               });
+              console.log("first time");
+              console.log(windowGroup, "windo group");
 
               currentWindow = [];
               continue;
             }
 
-            const lastWindow = windowGroup.pop()!;
+            const lastWindow = windowGroup?.[windowGroup.length - 1];
+            console.log(lastWindow, "last window");
             const latestWindow = {
-              chat: currentWindow?.[0].chat + currentWindow?.[1].chat,
+              chat: currentWindow?.[0].chat,
               embedding: null,
-              channel: [
-                ...new Set([currentWindow[0].channel, currentWindow[1].channel])
-              ],
-              end: currentWindow[1].end,
+              channel: [...new Set([currentWindow[0].channel])],
+              end: currentWindow[0].end,
               start: currentWindow[0].start
             };
+            console.log(latestWindow, "latest window");
 
             currentWindow = [];
 
@@ -154,18 +173,14 @@ class TranscriptProcessWorker {
               latestWindowembedding
             );
 
-            if (similarity > 0.8) {
-              windowGroup.push({
-                chat: lastWindow.chat,
-                embedding: lastWindowEmbedding,
-                channel: lastWindow.channel,
-                start: lastWindow.start,
-                end: lastWindow.end
-              });
-            } else {
+            console.log(similarity, "similarlitty");
+
+            if (similarity < 0.8) {
               const rawTranscript = windowGroup
                 .map((d) => `${d.start}:${JSON.stringify(d.channel)}:${d.chat}`)
                 .join("\n");
+
+              console.log(rawTranscript, "raw transcript");
 
               const response = await ollama.embed({
                 model: "nomic-embed-text",
@@ -211,7 +226,7 @@ class TranscriptProcessWorker {
               });
 
               await transcriptChunkRepo.save(chunk);
-
+              console.log("Saved");
               windowGroup = [];
             }
             windowGroup.push({
@@ -221,10 +236,14 @@ class TranscriptProcessWorker {
               end: latestWindow.end,
               channel: latestWindow.channel
             });
-
-            console.log(similarity);
+            console.log(windowGroup, "window group at the end ");
+            console.log("=====================================");
+            console.log("=====================================");
+            console.log("=====================================");
           }
         } catch (error) {
+          console.error("Error inside transcript processing loop:", error);
+          await new Promise((resolve) => setTimeout(resolve, 1000));
           continue;
         }
       }

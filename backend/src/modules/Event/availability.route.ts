@@ -4,7 +4,7 @@ import {
   getAvailabilityForPublicEventController,
   getUserAvailabilityController,
   updateAvailabilityController
-} from "../controllers/availability.controller";
+} from "./availability.controller";
 
 const availabilityRoutes = Router();
 

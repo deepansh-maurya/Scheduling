@@ -1,5 +1,4 @@
 import { createClient } from "redis";
-import { Queue } from "bullmq";
 
 export const redisClient = createClient({
   url: process.env.REDIS_URL
@@ -16,10 +15,9 @@ redisPubSub.on("error", (err) => {
 });
 
 export const connectRedis = async () => {
-  await redisClient.connect();
-  await redisPubSub.connect();
+  if (!redisClient.isOpen) await redisClient.connect();
 };
 
-export const resourceQueue = new Queue("meeting-resources", {
-  connection: redisClient
-});
+export const connectRedisPubSub = async () => {
+  if (!redisPubSub.isOpen) await redisPubSub.connect();
+};

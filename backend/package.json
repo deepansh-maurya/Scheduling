@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node-dev --files src/index.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc && cp ./package.json ./dist",
     "start": "node dist/index.js",
     "typeorm": "typeorm-ts-node-commonjs -d ./src/core/config/database.config.ts",
@@ -12,7 +12,7 @@
     "db:migrate": "npm run typeorm -- migration:run",
     "db:revert": "npm run typeorm -- migration:revert",
     "db:drop": "npm run typeorm -- schema:drop",
-    "worker": "concurrently \"node ./src/core/workers/resrouce-process.worker.ts\" \"npm run client\""
+    "worker": "concurrently \"npx ts-node src/core/workers/transcript-process.worker.ts\" \"npx ts-node src/core/workers/resource-process.worker.ts\""
   },
   "keywords": [],
   "author": "",
@@ -23,15 +23,17 @@
     "@elastic/elasticsearch": "^9.5.1",
     "@types/ws": "^8.18.1",
     "axios": "^1.20.0",
-    "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.3",
     "bullmq": "^6.3.16",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "concurrently": "^10.0.6",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "googleapis": "^144.0.0",
+    "ioredis": "^6.0.0",
     "js-base64": "^3.7.7",
     "jsonwebtoken": "^9.0.3",
     "minio": "^8.0.7",
@@ -50,6 +52,7 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
+    "@types/bcryptjs": "^3.0.0",
     "@types/cors": "^2.8.17",
     "@types/dotenv": "^8.2.3",
     "@types/express": "^5.0.0",
@@ -57,7 +60,6 @@
     "@types/node": "^22.13.4",
     "@types/passport": "^1.0.17",
     "@types/passport-jwt": "^4.0.1",
-    "concurrently": "^10.0.6",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.7.3"
   }
