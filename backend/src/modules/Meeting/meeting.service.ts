@@ -701,6 +701,7 @@ export async function processResourceAndAnswer(
   files: Express.Multer.File[]
 ) {
   const { meetingId, question } = meetingResourceDto;
+  console.log("meetingid", meetingId, "question", question);
 
   const uploadId = randomUUID();
 
@@ -760,6 +761,8 @@ export async function processResourceAndAnswer(
   );
 
   const passages = extractedTexts.flatMap((text) => splitTextIntoChunks(text));
+
+  console.log(passages, "passages");
 
   if (!passages.length) {
     throw new Error("No searchable text could be extracted");
@@ -920,11 +923,13 @@ export async function indexTemporaryPassages({
       content
     }
   ]);
-
+  console.log(operations, "operations");
   const bulkResult = await elasticsearch.bulk({
     operations,
     refresh: true
   });
+
+  console.log(bulkResult, "bulk result ");
 
   if (bulkResult.errors) {
     throw new Error("Failed to index some temporary passages");
@@ -952,6 +957,8 @@ export async function searchBM25({
       }
     }
   });
+
+  console.log(result, "index result");
 
   return result.hits.hits.flatMap((hit) => {
     const source = hit._source as { content?: string } | undefined;

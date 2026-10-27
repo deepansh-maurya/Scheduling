@@ -75,7 +75,7 @@ export const dissconnectAppIntegrationQueryFn = async (
   appType: IntegrationProviderType
 ) => {
   await API.delete(`integration/dissconnect/${appType}`);
-};  
+};
 
 //*********** */ Availability APIS
 
@@ -111,6 +111,10 @@ export const cancelMeetingMutationFn = async (meetingId: string) => {
 
 export const syncMeetings = async () => {
   await API.post(`/meeting/sync`);
+};
+
+export const askAboutFiles = async (data: FormData) => {
+  await API.post("/meeting/upload", data);
 };
 
 // export const syncMeetings

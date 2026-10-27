@@ -73,16 +73,17 @@ export const processResourceFile = asyncHandlerAndValidation(
   async (req: Request, res: Response, meetingResourceDto) => {
     const { meetingId, question } = req.body;
     const userId = req.user?.id as string;
+    console.log("reached");
     const meetingRepo = AppDataSource.getRepository(Meeting);
     const meeting = await meetingRepo.findOne({ where: { id: meetingId } });
     const files = req.files as Express.Multer.File[];
-
+    console.log(files, "file");
     const releventChunks = await processResourceAndAnswer(
       userId,
       meetingResourceDto,
       files
     );
-
+    console.log(releventChunks.relevantPassages);
     const message: LlmMessage[] = [
       {
         role: "system",
@@ -94,6 +95,8 @@ export const processResourceFile = asyncHandlerAndValidation(
         })
       }
     ];
+
+    console.log(message);
 
     const llmResponse = await Llm.call(message);
 

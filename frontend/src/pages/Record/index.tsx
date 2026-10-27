@@ -24,6 +24,7 @@ export interface Chat {
   id: string;
   author: "system" | "user";
   message: string;
+  files?: File[];
 }
 
 const Record = () => {
@@ -318,6 +319,7 @@ const Record = () => {
       </button>
       {showBot && (
         <MeetingChatbot
+          meetingId={id!}
           setChat={setChat}
           chat={chat}
           chatbotRef={chatBotRef}

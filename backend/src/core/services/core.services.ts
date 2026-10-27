@@ -11,6 +11,12 @@ export const uploadToMinio = async (
   try {
     const objectKey = `resources/${userId}/${meetingId}/${randomUUID()}-${file.originalname}`;
 
+    const exists = await minioClient.bucketExists(bucket);
+
+    if (!exists) {
+      await minioClient.makeBucket(bucket);
+    }
+
     await minioClient.putObject(bucket, objectKey, file.buffer, file.size, {
       "Content-Type": file.mimetype
     });
